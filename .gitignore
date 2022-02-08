@@ -11,3 +11,5 @@ target
 node_modules
 test/derby.log
 /console-fe
+nacossync-distribution/logs/
+nacosSync.home_IS_UNDEFINED/
