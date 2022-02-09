@@ -45,6 +45,7 @@ const I18N_CONF = {
     serviceNamePlaceholder: '请输入服务名',
     search: '搜索',
     addSync: '新增同步',
+    batchAddSync: '批量同步',
     serviceName: '服务名',
     groupName: '分组',
     sourceCluster: '源集群',

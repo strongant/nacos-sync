@@ -12,7 +12,6 @@
  */
 package com.alibaba.nacossync.extension.impl;
 
-import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacossync.cache.SkyWalkerCacheServices;
 import com.alibaba.nacossync.constant.ClusterTypeEnum;
 import com.alibaba.nacossync.constant.MetricsStatisticsType;
@@ -31,6 +30,8 @@ import com.ecwid.consul.v1.agent.model.NewService;
 import com.ecwid.consul.v1.health.model.Check;
 import com.ecwid.consul.v1.health.model.HealthService;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.units.qual.A;
+import org.checkerframework.checker.units.qual.C;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;

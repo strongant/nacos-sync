@@ -43,6 +43,7 @@ const I18N_CONF = {
     serviceNamePlaceholder: 'Please enter service name',
     search: 'Search',
     addSync: 'New Sync',
+    batchAddSync: 'Batch New Sync',
     serviceName: 'Service Name',
     groupName: 'Group',
     sourceCluster: 'Source Cluster',

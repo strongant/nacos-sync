@@ -114,6 +114,12 @@ class ServiceSync extends React.Component {
             onClick={() => this.openAddDialog()}
           >{locale.addSync}
           </Button>
+          <Button
+              type="normal"
+              className="add-btn"
+              onClick={() => this.openAddDialog()}
+          >{locale.batchAddSync}
+          </Button>
         </Form>
         <Table dataSource={taskModels} loading={loading}>
           <Table.Column title={locale.serviceName} dataIndex="serviceName" />
