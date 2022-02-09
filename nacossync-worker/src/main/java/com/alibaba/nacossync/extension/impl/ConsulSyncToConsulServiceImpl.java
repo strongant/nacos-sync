@@ -28,11 +28,14 @@ import com.ecwid.consul.v1.ConsulClient;
 import com.ecwid.consul.v1.QueryParams;
 import com.ecwid.consul.v1.Response;
 import com.ecwid.consul.v1.agent.model.NewService;
+import com.ecwid.consul.v1.health.model.Check;
 import com.ecwid.consul.v1.health.model.HealthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 支持 Consul 同步 Consul
@@ -40,6 +43,8 @@ import java.util.*;
 @Slf4j
 @NacosSyncService(sourceCluster = ClusterTypeEnum.CONSUL, destinationCluster = ClusterTypeEnum.CONSUL)
 public class ConsulSyncToConsulServiceImpl implements SyncService {
+
+    private static  final         Pattern pattern = Pattern.compile("http:\\/\\/\\s?(\\d*.\\d*.\\d*.\\d*:?\\d*/[a-zA-Z]*/?[a-zA-Z]*)", Pattern.CASE_INSENSITIVE);
 
     @Autowired
     private MetricsManager metricsManager;
@@ -128,6 +133,21 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         NewService temp = new NewService();
         temp.setAddress(instance.getService().getAddress());
         temp.setPort(instance.getService().getPort());
+        temp.setName(instance.getService().getService());
+        temp.setTags(instance.getService().getTags());
+        temp.setId(instance.getService().getId());
+        NewService.Check check = new NewService.Check();
+        String httpCheck = null;
+        for (Check instanceCheck : instance.getChecks()) {
+            if (instanceCheck.getOutput().contains("http")) {
+                httpCheck = findHealthURL(instanceCheck.getOutput());
+                check.setHttp(String.format("http://%s",httpCheck));
+                check.setInterval("10s");
+                break;
+            }
+        }
+        temp.setCheck(check);
+
         Map<String, String> metaData = new HashMap<>(ConsulUtils.transferMetadata(instance.getService().getTags()));
         metaData.put(SkyWalkerConstants.DEST_CLUSTERID_KEY, taskDO.getDestClusterId());
         metaData.put(SkyWalkerConstants.SYNC_SOURCE_KEY,
@@ -139,6 +159,16 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
 
     private String composeInstanceKey(String ip, int port) {
         return ip + ":" + port;
+    }
+
+
+    public static String findHealthURL(String text) {
+        Matcher matcher = pattern.matcher(text);
+        String matchText = null;
+        if (matcher.find()) {
+            matchText =  matcher.group(1);
+        }
+        return matchText;
     }
 
 }
