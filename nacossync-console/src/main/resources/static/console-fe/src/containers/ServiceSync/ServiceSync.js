@@ -17,6 +17,8 @@ class ServiceSync extends React.Component {
   constructor(props) {
     super(props);
     this.addDialog = React.createRef();
+    this.batchAddDialog = React.createRef();
+
     this.state = {
       pageNum: 1,
       loading: true,
@@ -84,12 +86,12 @@ class ServiceSync extends React.Component {
     this.setState({ search: Object.assign({}, search, obj) });
   }
 
-  openAddDialog() {
+   openAddDialog() {
     this.addDialog.current.getWrappedInstance().getInstance().open();
   }
 
   openBatchAddDialog() {
-    this.addDialog.current.getWrappedInstance().getInstance().open();
+    this.batchAddDialog.current.getWrappedInstance().getInstance().open();
   }
 
   render() {
@@ -189,6 +191,8 @@ class ServiceSync extends React.Component {
           )
         }
         <AddSyncDialog ref={this.addDialog} turnPage={pn => this.turnPage(pn)} />
+
+        <AddSyncDialog ref={this.batchAddDialog} turnPage={pn => this.turnPage(pn)} />
       </div>
     );
   }
