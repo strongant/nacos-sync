@@ -88,6 +88,10 @@ class ServiceSync extends React.Component {
     this.addDialog.current.getWrappedInstance().getInstance().open();
   }
 
+  openBatchAddDialog() {
+    this.addDialog.current.getWrappedInstance().getInstance().open();
+  }
+
   render() {
     const { loading, pageNum, search } = this.state;
     const { taskModels = [], locale = {}, totalSize = 0, totalPage = 0, clusterModels = [] } = this.props;
@@ -117,7 +121,7 @@ class ServiceSync extends React.Component {
           <Button
               type="normal"
               className="add-btn"
-              onClick={() => this.openAddDialog()}
+              onClick={() => this.openBatchAddDialog()}
           >{locale.batchAddSync}
           </Button>
         </Form>
