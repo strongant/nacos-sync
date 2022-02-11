@@ -73,6 +73,13 @@ const I18N_CONF = {
     version: '版本',
     versionPlaceholder: '请输入版本',
   },
+  BatchAddSyncDialog: {
+    title: '批量新增同步',
+    sourceCluster: '源集群',
+    destCluster: '目标集群',
+    version: '版本',
+    versionPlaceholder: '请输入版本',
+  },
   SystemConfig: {
     title: '系统配置',
     configName: '配置名',

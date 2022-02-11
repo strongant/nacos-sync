@@ -64,6 +64,7 @@ class BatchAddSyncDialog extends React.Component {
         onClose={() => this.close()}
       >
         <Form>
+
           {
             sourceCluster.clusterType === 'ZK' && (
               <FormItem label={`${locale.version}:`}>

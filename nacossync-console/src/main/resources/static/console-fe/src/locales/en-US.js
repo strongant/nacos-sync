@@ -71,6 +71,17 @@ const I18N_CONF = {
     version: 'Version',
     versionPlaceholder: 'Please enter version',
   },
+  BatchAddSyncDialog: {
+    title: 'New BatchSync',
+    serviceName: 'Service Name',
+    serviceNamePlaceholder: 'Please enter service name',
+    groupName: 'Group Name',
+    groupNamePlaceholder: 'Please enter group name',
+    sourceCluster: 'Source Cluster',
+    destCluster: 'Dest Cluster',
+    version: 'Version',
+    versionPlaceholder: 'Please enter version',
+  },
   SystemConfig: {
     title: 'System configuration',
     configName: 'Config Name',
