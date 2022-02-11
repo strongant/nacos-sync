@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 import { Table, Pagination, Form, Input, Button, Dialog, Message, ConfigProvider } from '@alifd/next';
 import FuncHead from '../../components/FuncHead';
 import AddSyncDialog from './AddSyncDialog';
+import BatchAddSyncDialog from './BatchAddSyncDialog';
 import { list, update, deleteRow } from '../../reducers/task';
 import { list as getClusterList } from '../../reducers/cluster';
 import './index.scss';
@@ -192,7 +193,7 @@ class ServiceSync extends React.Component {
         }
         <AddSyncDialog ref={this.addDialog} turnPage={pn => this.turnPage(pn)} />
 
-        <AddSyncDialog ref={this.batchAddDialog} turnPage={pn => this.turnPage(pn)} />
+        <BatchAddSyncDialog ref={this.batchAddDialog} turnPage={pn => this.turnPage(pn)} />
       </div>
     );
   }

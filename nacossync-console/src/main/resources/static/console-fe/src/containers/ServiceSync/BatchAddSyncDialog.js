@@ -10,8 +10,8 @@ const { Option } = Select;
 
 @connect(state => ({ ...state.cluster }), { list }, null, { withRef: true })
 @ConfigProvider.config
-class AddSyncDialog extends React.Component {
-  static displayName = 'AddSyncDialog'
+class BatchAddSyncDialog extends React.Component {
+  static displayName = 'BatchAddSyncDialog'
 
   constructor(props) {
     super(props);
@@ -64,18 +64,6 @@ class AddSyncDialog extends React.Component {
         onClose={() => this.close()}
       >
         <Form>
-          <FormItem label={`${locale.serviceName}:`}>
-            <Input
-              placeholder={locale.serviceNamePlaceholder}
-              onChange={serviceName => this.setState({ serviceName })}
-            />
-          </FormItem>
-          <FormItem label={`${locale.groupName}:`}>
-            <Input
-              placeholder={locale.groupNamePlaceholder}
-              onChange={groupName => this.setState({ groupName })}
-            />
-          </FormItem>
           {
             sourceCluster.clusterType === 'ZK' && (
               <FormItem label={`${locale.version}:`}>
@@ -110,4 +98,4 @@ class AddSyncDialog extends React.Component {
   }
 }
 
-export default AddSyncDialog;
+export default BatchAddSyncDialog;
