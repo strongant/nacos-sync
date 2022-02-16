@@ -12,6 +12,8 @@ const initialState = {
 
 const add = data => request.post(`${PATH}add`, data);
 
+const batchAdd = data => request.post(`${PATH}batchAdd`, data);
+
 const update = data => request.post(`${PATH}update`, data);
 
 const deleteRow = params => request.delete(`${PATH}delete`, { params });
@@ -42,4 +44,4 @@ export default (state = initialState, action) => {
   }
 };
 
-export { list, add, update, deleteRow, detail };
+export { list, add, update, deleteRow, detail , batchAdd };

@@ -12,16 +12,8 @@
  */
 package com.alibaba.nacossync.api;
 
-import com.alibaba.nacossync.pojo.request.TaskAddRequest;
-import com.alibaba.nacossync.pojo.request.TaskDeleteInBatchRequest;
-import com.alibaba.nacossync.pojo.request.TaskDeleteRequest;
-import com.alibaba.nacossync.pojo.request.TaskDetailQueryRequest;
-import com.alibaba.nacossync.pojo.request.TaskListQueryRequest;
-import com.alibaba.nacossync.pojo.request.TaskUpdateRequest;
-import com.alibaba.nacossync.pojo.result.BaseResult;
-import com.alibaba.nacossync.pojo.result.TaskAddResult;
-import com.alibaba.nacossync.pojo.result.TaskDetailQueryResult;
-import com.alibaba.nacossync.pojo.result.TaskListQueryResult;
+import com.alibaba.nacossync.pojo.request.*;
+import com.alibaba.nacossync.pojo.result.*;
 import com.alibaba.nacossync.template.SkyWalkerTemplate;
 import com.alibaba.nacossync.template.processor.TaskAddProcessor;
 import com.alibaba.nacossync.template.processor.TaskDeleteInBatchProcessor;
@@ -104,5 +96,11 @@ public class TaskApi {
     public BaseResult updateTask(@RequestBody TaskUpdateRequest taskUpdateRequest) {
 
         return SkyWalkerTemplate.run(taskUpdateProcessor, taskUpdateRequest, new BaseResult());
+    }
+
+    @RequestMapping(path = "/v1/task/batchAdd", method = RequestMethod.POST)
+    public BaseResult taskBatchAdd(@RequestBody TaskBatchAddRequest addTaskRequest) {
+
+        return SkyWalkerTemplate.run(taskAddProcessor, addTaskRequest, new TaskBatchAddResult());
     }
 }

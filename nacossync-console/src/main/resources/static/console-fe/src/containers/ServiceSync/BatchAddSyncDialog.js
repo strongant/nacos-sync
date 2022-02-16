@@ -2,7 +2,7 @@ import React from 'react';
 import { Form, Input, Select, Dialog, ConfigProvider } from '@alifd/next';
 import '../../style/dialog-form.scss';
 import connect from 'react-redux/es/connect/connect';
-import { add } from '../../reducers/task';
+import { batchAdd } from '../../reducers/task';
 import { list } from '../../reducers/cluster';
 
 const FormItem = Form.Item;
@@ -32,7 +32,7 @@ class BatchAddSyncDialog extends React.Component {
 
   save() {
     const { destClusterId, groupName, serviceName, sourceClusterId, version } = this.state;
-    add({ destClusterId, groupName, serviceName, sourceClusterId, version })
+    batchAdd({ destClusterId, groupName, serviceName, sourceClusterId, version })
       .then(() => {
         this.props.turnPage(1);
         this.close();
