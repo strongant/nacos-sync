@@ -68,6 +68,7 @@ Info |      +------------+                   ^
 | Zookeeper | Nacos     | Yes     | Only support registery center of **Dubbo**                   |
 | Consul    | Nacos     | Yes     | Only support  registery center of **Spring Cloud**           |
 | Eureka    | Nacos     | Yes     | Only support  registery center of **Spring Cloud**           |
+| Consul    | Consul     | Yes    | Only support  registery center of **Spring Cloud**           |
 
 
 

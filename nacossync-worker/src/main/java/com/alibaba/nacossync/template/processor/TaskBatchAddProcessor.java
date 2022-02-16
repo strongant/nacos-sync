@@ -32,8 +32,10 @@ import com.alibaba.nacossync.util.SkyWalkerUtil;
 import com.ecwid.consul.v1.ConsulClient;
 import com.ecwid.consul.v1.Response;
 import com.ecwid.consul.v1.catalog.CatalogServicesRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -57,11 +59,15 @@ public class TaskBatchAddProcessor implements Processor<TaskBatchAddRequest, Tas
 
     private static final String DEFAULT_CONSUL_SERVICE_NAME = "consul";
 
+    private final ObjectMapper objectMapper;
+
     public TaskBatchAddProcessor(SyncManagerService syncManagerService,
-                                 TaskAccessService taskAccessService, ClusterAccessService clusterAccessService) {
+                                 TaskAccessService taskAccessService, ClusterAccessService clusterAccessService,
+                                 ObjectMapper objectMapper) {
         this.syncManagerService = syncManagerService;
         this.taskAccessService = taskAccessService;
         this.clusterAccessService = clusterAccessService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -90,12 +96,16 @@ public class TaskBatchAddProcessor implements Processor<TaskBatchAddRequest, Tas
         }
 
 
-        String connectKeyList = sourceCluster.getConnectKeyList();
-        String[] sourceAddresses = connectKeyList.split(",");
+        String connectKeyListString = sourceCluster.getConnectKeyList();
 
-        String sourceConsulServerAddress = sourceAddresses[0];
+        List<String> connectKeyList = objectMapper.readerForListOf(String.class)
+                .readValue(connectKeyListString);
+
+        String sourceConsulServerAddress = connectKeyList.get(0);
         String consulAddress = String.format("http://%s/v1/catalog/services", sourceConsulServerAddress);
         URI uri = HttpUtils.buildUri(consulAddress, null);
+        log.info("[NacosSync] 从consul 原集群批量同步服务 {}" , consulAddress);
+
         ConsulClient consulClient = new ConsulClient(uri.getHost(), uri.getPort());
         Response<Map<String, List<String>>> catalogServices = consulClient.getCatalogServices(CatalogServicesRequest.newBuilder().build());
         if (ObjectUtils.isEmpty(catalogServices) || catalogServices.getValue().remove(DEFAULT_CONSUL_SERVICE_NAME).size() == 0) {
