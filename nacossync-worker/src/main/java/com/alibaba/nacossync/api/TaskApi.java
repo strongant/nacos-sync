@@ -15,12 +15,7 @@ package com.alibaba.nacossync.api;
 import com.alibaba.nacossync.pojo.request.*;
 import com.alibaba.nacossync.pojo.result.*;
 import com.alibaba.nacossync.template.SkyWalkerTemplate;
-import com.alibaba.nacossync.template.processor.TaskAddProcessor;
-import com.alibaba.nacossync.template.processor.TaskDeleteInBatchProcessor;
-import com.alibaba.nacossync.template.processor.TaskDeleteProcessor;
-import com.alibaba.nacossync.template.processor.TaskDetailProcessor;
-import com.alibaba.nacossync.template.processor.TaskListQueryProcessor;
-import com.alibaba.nacossync.template.processor.TaskUpdateProcessor;
+import com.alibaba.nacossync.template.processor.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,15 +42,19 @@ public class TaskApi {
 
     private final TaskDetailProcessor taskDetailProcessor;
 
+    private final TaskBatchAddProcessor taskBatchAddProcessor;
+
     public TaskApi(TaskUpdateProcessor taskUpdateProcessor, TaskAddProcessor taskAddProcessor,
         TaskDeleteProcessor taskDeleteProcessor, TaskDeleteInBatchProcessor taskDeleteInBatchProcessor,
-        TaskListQueryProcessor taskListQueryProcessor, TaskDetailProcessor taskDetailProcessor) {
+        TaskListQueryProcessor taskListQueryProcessor, TaskDetailProcessor taskDetailProcessor,
+                   TaskBatchAddProcessor taskBatchAddProcessor) {
         this.taskUpdateProcessor = taskUpdateProcessor;
         this.taskAddProcessor = taskAddProcessor;
         this.taskDeleteProcessor = taskDeleteProcessor;
         this.taskDeleteInBatchProcessor = taskDeleteInBatchProcessor;
         this.taskListQueryProcessor = taskListQueryProcessor;
         this.taskDetailProcessor = taskDetailProcessor;
+        this.taskBatchAddProcessor = taskBatchAddProcessor;
     }
 
     @RequestMapping(path = "/v1/task/list", method = RequestMethod.GET)
@@ -99,8 +98,8 @@ public class TaskApi {
     }
 
     @RequestMapping(path = "/v1/task/batchAdd", method = RequestMethod.POST)
-    public BaseResult taskBatchAdd(@RequestBody TaskBatchAddRequest addTaskRequest) {
+    public BaseResult taskBatchAdd(@RequestBody TaskBatchAddRequest batchAddTaskRequest) {
 
-        return SkyWalkerTemplate.run(taskAddProcessor, addTaskRequest, new TaskBatchAddResult());
+        return SkyWalkerTemplate.run(taskBatchAddProcessor, batchAddTaskRequest, new TaskBatchAddResult());
     }
 }
