@@ -108,7 +108,9 @@ public class TaskBatchAddProcessor implements Processor<TaskBatchAddRequest, Tas
 
         ConsulClient consulClient = new ConsulClient(uri.getHost(), uri.getPort());
         Response<Map<String, List<String>>> catalogServices = consulClient.getCatalogServices(CatalogServicesRequest.newBuilder().build());
-        if (ObjectUtils.isEmpty(catalogServices) || catalogServices.getValue().remove(DEFAULT_CONSUL_SERVICE_NAME).size() == 0) {
+        catalogServices.getValue().remove(DEFAULT_CONSUL_SERVICE_NAME);
+
+        if (ObjectUtils.isEmpty(catalogServices) || ObjectUtils.isEmpty(catalogServices.getValue().keySet())) {
             throw new SkyWalkerException("批量同步读取服务列表为空，请检查。");
         }
 
@@ -118,6 +120,7 @@ public class TaskBatchAddProcessor implements Processor<TaskBatchAddRequest, Tas
 
         for (String sourceServiceName : sourceServiceNames) {
 
+            taskBatchAddRequest.setServiceName(sourceServiceName);
             String taskId = SkyWalkerUtil.generateTaskId(taskBatchAddRequest);
 
             TaskDO taskDO = taskAccessService.findByTaskId(taskId);
