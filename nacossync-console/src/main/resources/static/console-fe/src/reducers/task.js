@@ -44,4 +44,4 @@ export default (state = initialState, action) => {
   }
 };
 
-export { list, add, update, deleteRow, detail , batchAdd };
+export { list, add, update, deleteRow, detail, batchAdd };

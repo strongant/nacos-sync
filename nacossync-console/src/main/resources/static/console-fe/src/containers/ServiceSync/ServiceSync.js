@@ -87,7 +87,7 @@ class ServiceSync extends React.Component {
     this.setState({ search: Object.assign({}, search, obj) });
   }
 
-   openAddDialog() {
+  openAddDialog() {
     this.addDialog.current.getWrappedInstance().getInstance().open();
   }
 
@@ -122,9 +122,9 @@ class ServiceSync extends React.Component {
           >{locale.addSync}
           </Button>
           <Button
-              type="normal"
-              className="add-btn"
-              onClick={() => this.openBatchAddDialog()}
+            type="normal"
+            className="add-btn"
+            onClick={() => this.openBatchAddDialog()}
           >{locale.batchAddSync}
           </Button>
         </Form>
