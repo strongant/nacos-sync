@@ -30,6 +30,7 @@ import com.alibaba.nacossync.pojo.result.TaskBatchAddResult;
 import com.alibaba.nacossync.template.Processor;
 import com.alibaba.nacossync.util.SkyWalkerUtil;
 import com.ecwid.consul.v1.ConsulClient;
+import com.ecwid.consul.v1.QueryParams;
 import com.ecwid.consul.v1.Response;
 import com.ecwid.consul.v1.catalog.CatalogServicesRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -107,7 +108,10 @@ public class TaskBatchAddProcessor implements Processor<TaskBatchAddRequest, Tas
         log.info("[NacosSync] 从consul 原集群批量同步服务 {}" , consulAddress);
 
         ConsulClient consulClient = new ConsulClient(uri.getHost(), uri.getPort());
-        Response<Map<String, List<String>>> catalogServices = consulClient.getCatalogServices(CatalogServicesRequest.newBuilder().build());
+
+        CatalogServicesRequest request = CatalogServicesRequest.newBuilder().build();
+
+        Response<Map<String, List<String>>> catalogServices = consulClient.getCatalogServices(request);
         catalogServices.getValue().remove(DEFAULT_CONSUL_SERVICE_NAME);
 
         if (ObjectUtils.isEmpty(catalogServices) || ObjectUtils.isEmpty(catalogServices.getValue().keySet())) {

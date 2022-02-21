@@ -12,6 +12,7 @@
  */
 package com.alibaba.nacossync.extension.holder;
 
+import com.alibaba.nacossync.extension.support.ConsulClientEnhance;
 import com.ecwid.consul.v1.ConsulClient;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,7 @@ public class ConsulServerHolder extends AbstractServerHolderImpl<ConsulClient> {
         String serverAddress = serverAddressSupplier.get();
         serverAddress = serverAddress.startsWith(HTTP) ? serverAddress : HTTP + serverAddress;
         URL url = new URL(serverAddress);
-        return new ConsulClient(url.getHost(), url.getPort());
+        return new ConsulClientEnhance(url.getHost(), url.getPort());
     }
 
 }

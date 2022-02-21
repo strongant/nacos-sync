@@ -20,6 +20,7 @@ import com.alibaba.nacossync.extension.SyncService;
 import com.alibaba.nacossync.extension.annotation.NacosSyncService;
 import com.alibaba.nacossync.extension.event.SpecialSyncEventBus;
 import com.alibaba.nacossync.extension.holder.ConsulServerHolder;
+import com.alibaba.nacossync.extension.support.ConsulClientEnhance;
 import com.alibaba.nacossync.monitor.MetricsManager;
 import com.alibaba.nacossync.pojo.model.TaskDO;
 import com.alibaba.nacossync.util.ConsulUtils;
@@ -30,10 +31,9 @@ import com.ecwid.consul.v1.agent.model.NewService;
 import com.ecwid.consul.v1.health.model.Check;
 import com.ecwid.consul.v1.health.model.HealthService;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.units.qual.A;
-import org.checkerframework.checker.units.qual.C;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -78,7 +78,8 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
             Response<List<HealthService>> allInstances = destConsulClient.getHealthServices(taskDO.getServiceName(), true , QueryParams.DEFAULT);
             for (HealthService instance : allInstances.getValue()) {
                 if (needDelete(instance.getService().getMeta(), taskDO)) {
-                    destConsulClient.agentServiceDeregister(taskDO.getServiceName(),null);
+                    ConsulClientEnhance destConsulClientEnhance = (ConsulClientEnhance) destConsulClient;
+                    destConsulClientEnhance.agentServiceDeregister(taskDO.getServiceName(),null,instance.getService().getAddress());
                 }
             }
 
@@ -94,8 +95,10 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
     public boolean sync(TaskDO taskDO) {
         try {
             ConsulClient consulClient = consulServerHolder.get(taskDO.getSourceClusterId());
+
             ConsulClient destConsulClient = destConsulServerHolder.get(taskDO.getDestClusterId());
-           List<HealthService> healthServiceList = consulClient.getHealthServices(taskDO.getServiceName(), true, QueryParams.DEFAULT).getValue();
+
+            List<HealthService> healthServiceList = consulClient.getHealthServices(taskDO.getServiceName(), true, QueryParams.DEFAULT).getValue();
             Set<String> instanceKeys = new HashSet<>();
             overrideAllInstance(taskDO, destConsulClient, healthServiceList, instanceKeys);
             cleanAllOldInstance(taskDO, destConsulClient, instanceKeys);
@@ -119,11 +122,11 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         }
     }
 
-    private void overrideAllInstance(TaskDO taskDO, ConsulClient destNamingService,
-        List<HealthService> healthServiceList, Set<String> instanceKeys) {
+    private void overrideAllInstance(TaskDO taskDO, ConsulClient destConsulClient,
+        List<HealthService> healthServiceList, Set<String> instanceKeys) throws URISyntaxException {
         for (HealthService healthService : healthServiceList) {
             if (needSync(ConsulUtils.transferMetadata(healthService.getService().getTags()))) {
-                destNamingService.agentServiceRegister(buildSyncInstance(healthService, taskDO));
+                destConsulClient.agentServiceRegister(buildSyncInstance(healthService, taskDO));
                 instanceKeys.add(composeInstanceKey(healthService.getService().getAddress(),
                     healthService.getService().getPort()));
             }
