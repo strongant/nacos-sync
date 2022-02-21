@@ -79,7 +79,7 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
             for (HealthService instance : allInstances.getValue()) {
                 if (needDelete(instance.getService().getMeta(), taskDO)) {
                     ConsulClientEnhance destConsulClientEnhance = (ConsulClientEnhance) destConsulClient;
-                    destConsulClientEnhance.agentServiceDeregister(taskDO.getServiceName(),null,instance.getService().getAddress());
+                    destConsulClientEnhance.agentServiceDeregister(instance.getService().getId(),null,instance.getService().getAddress());
                 }
             }
 
