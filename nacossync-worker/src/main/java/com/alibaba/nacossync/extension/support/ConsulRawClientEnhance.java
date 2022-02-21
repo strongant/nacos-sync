@@ -133,7 +133,7 @@ public class ConsulRawClientEnhance extends ConsulRawClient {
         HttpResponse httpResponse = this.makePutRequest("/v1/agent/service/deregister/" + serviceId, newServiceContent, tokenParam);
 
         if (httpResponse.getStatusCode() == 200) {
-            return new Response<Void>(null, httpResponse);
+            return new Response<>(null, httpResponse);
         } else {
             throw new OperationException(httpResponse);
         }

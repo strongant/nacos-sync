@@ -117,7 +117,8 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
             if (needDelete(instance.getService().getMeta(), taskDO)
                 && !instanceKeys.contains(composeInstanceKey(instance.getService().getAddress(), instance.getService().getPort()))) {
 
-                destNamingService.agentServiceDeregister(instance.getService().getId(),null);
+                ConsulClientEnhance consulClientEnhance = (ConsulClientEnhance)destNamingService;
+                consulClientEnhance.agentServiceDeregister(instance.getService().getId(),null,instance.getService().getAddress());
             }
         }
     }
