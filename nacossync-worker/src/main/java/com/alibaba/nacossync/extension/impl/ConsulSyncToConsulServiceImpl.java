@@ -145,9 +145,14 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         List<HealthService> healthServiceList, Set<String> instanceKeys) throws URISyntaxException {
         for (HealthService healthService : healthServiceList) {
             if (needSync(ConsulUtils.transferMetadata(healthService.getService().getTags()))) {
-                destConsulClient.agentServiceRegister(buildSyncInstance(healthService, taskDO));
-                instanceKeys.add(composeInstanceKey(healthService.getService().getAddress(),
-                    healthService.getService().getPort()));
+                try {
+                    destConsulClient.agentServiceRegister(buildSyncInstance(healthService, taskDO));
+                    instanceKeys.add(composeInstanceKey(healthService.getService().getAddress(),
+                        healthService.getService().getPort()));
+                } catch (Exception e) {
+                    log.warn("Sync task from consul to consul was failed , healthService address : {} , port : {} " ,
+                            healthService.getService().getAddress(),healthService.getService().getPort() , e);
+                }
             }
         }
     }
@@ -158,7 +163,7 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         temp.setAddress(instance.getService().getAddress());
         temp.setPort(instance.getService().getPort());
         temp.setName(instance.getService().getService());
-        temp.setTags(instance.getService().getTags());
+        temp.setTags(ConsulUtils.transferTags(instance.getService().getTags()));
         temp.setId(instance.getService().getId());
         NewService.Check check = new NewService.Check();
         String httpCheck = null;

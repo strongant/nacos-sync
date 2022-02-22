@@ -13,6 +13,7 @@
 package com.alibaba.nacossync.util;
 
 import com.alibaba.nacos.client.naming.utils.CollectionUtils;
+import com.google.common.collect.Lists;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,5 +32,20 @@ public class ConsulUtils {
                 .collect(Collectors.toMap(tagSplitArray -> tagSplitArray[0], tagSplitArray -> tagSplitArray[1] , (v1,v2) -> v1));
         }
         return metadata;
+    }
+
+
+    public static List<String> transferTags(List<String> tags) {
+        List<String> newTags = Lists.newArrayList();
+
+        if (!CollectionUtils.isEmpty(tags)) {
+            for (String tag : tags) {
+                if (tag.contains("//")) {
+                    String tagNew = tag.replaceAll("//", "/");
+                    newTags.add(tagNew);
+                }
+            }
+        }
+        return newTags;
     }
 }
