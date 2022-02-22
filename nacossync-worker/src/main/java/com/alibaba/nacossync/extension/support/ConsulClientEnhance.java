@@ -1,14 +1,7 @@
 package com.alibaba.nacossync.extension.support;
 
-import com.ecwid.consul.SingleUrlParameters;
-import com.ecwid.consul.UrlParameters;
-import com.ecwid.consul.transport.HttpResponse;
 import com.ecwid.consul.v1.ConsulClient;
-import com.ecwid.consul.v1.ConsulRawClient;
-import com.ecwid.consul.v1.OperationException;
-import com.ecwid.consul.v1.Response;
-import com.ecwid.consul.v1.agent.AgentClient;
-import com.ecwid.consul.v1.agent.model.NewService;
+import com.ecwid.consul.v1.Response;;
 
 /**
  * @description: 支持PUT 方法传递自定义Header 头

@@ -134,7 +134,8 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         }
     }
 
-    private NewService buildSyncInstance(HealthService instance, TaskDO taskDO) {
+    public NewService buildSyncInstance(HealthService instance, TaskDO taskDO) {
+
         NewService temp = new NewService();
         temp.setAddress(instance.getService().getAddress());
         temp.setPort(instance.getService().getPort());
