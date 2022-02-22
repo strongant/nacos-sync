@@ -126,11 +126,8 @@ public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
 
                     Set<String> consulClientNodeSet = consulClientNodeList.stream().map(it -> it.getAddress()).collect(Collectors.toSet());
                     consulClientNodeSet.removeAll(serviceInstanceDistributionConsulClientSet);
-
-
+                    
                     doChoseConsulClientServerRegister(consulClientNodeSet,serviceInstanceUnique,taskDO);
-
-                    log.info("从数据库中查询到所有同步任务，检查服务实例分布情况，如果有必要则发出一个同步补偿事件，对应服务: {}" , taskDO.getServiceName());
                 });
 
             } catch (Exception e) {

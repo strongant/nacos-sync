@@ -30,7 +30,9 @@ import com.ecwid.consul.v1.Response;
 import com.ecwid.consul.v1.agent.model.NewService;
 import com.ecwid.consul.v1.health.model.Check;
 import com.ecwid.consul.v1.health.model.HealthService;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.net.URISyntaxException;
@@ -99,8 +101,10 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
             ConsulClient destConsulClient = destConsulServerHolder.get(taskDO.getDestClusterId());
 
             List<HealthService> healthServiceList = consulClient.getHealthServices(taskDO.getServiceName(), true, QueryParams.DEFAULT).getValue();
+            List<HealthService> uniqueServiceList = doUniqueServiceList(healthServiceList);
+
             Set<String> instanceKeys = new HashSet<>();
-            overrideAllInstance(taskDO, destConsulClient, healthServiceList, instanceKeys);
+            overrideAllInstance(taskDO, destConsulClient, uniqueServiceList, instanceKeys);
             cleanAllOldInstance(taskDO, destConsulClient, instanceKeys);
             specialSyncEventBus.subscribe(taskDO, this::sync);
         } catch (Exception e) {
@@ -111,10 +115,24 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         return true;
     }
 
+    private List<HealthService> doUniqueServiceList(List<HealthService> healthServiceList) {
+        Set<String> ipPortSet = new HashSet<>();
+        List<HealthService> newHealthServiceList = Lists.newArrayList();
+        for (HealthService healthService : healthServiceList) {
+            HealthService.Service service = healthService.getService();
+            if (healthService.getChecks().size() > 1 && !ipPortSet.contains(String.format("%s:%s", service.getAddress(), service.getPort())))  {
+                newHealthServiceList.add(healthService);
+                ipPortSet.add(String.format("%s:%s", service.getAddress(), service.getPort()));
+            }
+        }
+        return newHealthServiceList;
+    }
+
     private void cleanAllOldInstance(TaskDO taskDO, ConsulClient destNamingService, Set<String> instanceKeys) {
         List<HealthService> allInstances = destNamingService.getHealthServices(taskDO.getServiceName(),true,QueryParams.DEFAULT).getValue();
         for (HealthService instance : allInstances) {
             if (needDelete(instance.getService().getMeta(), taskDO)
+                    && instance.getChecks().size() > 1
                 && !instanceKeys.contains(composeInstanceKey(instance.getService().getAddress(), instance.getService().getPort()))) {
 
                 ConsulClientEnhance consulClientEnhance = (ConsulClientEnhance)destNamingService;
