@@ -24,9 +24,9 @@ import com.alibaba.nacossync.extension.impl.ConsulSyncToConsulServiceImpl;
 import com.alibaba.nacossync.extension.support.ConsulClientEnhance;
 import com.alibaba.nacossync.monitor.MetricsManager;
 import com.alibaba.nacossync.pojo.model.TaskDO;
+import com.alibaba.nacossync.util.ConsulUtils;
 import com.ecwid.consul.v1.ConsulClient;
 import com.ecwid.consul.v1.Response;
-import com.ecwid.consul.v1.agent.model.Member;
 import com.ecwid.consul.v1.health.HealthServicesRequest;
 import com.ecwid.consul.v1.health.model.HealthService;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +39,6 @@ import org.springframework.util.ObjectUtils;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -111,22 +110,22 @@ public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
                     Map<String,HealthService> serviceInstanceUnique = new HashMap<>();
 
                     for (HealthService healthService : healthServiceList) {
-                        serviceInstanceDistributionConsulClientSet.add(healthService.getNode().getAddress());
-                        serviceInstanceUnique.put(healthService.getService().getId(),healthService);
+                        // Node Check  + Health Check 都有效才需要做冗余注册
+                        if(healthService.getChecks().size() > 1) {
+                            serviceInstanceDistributionConsulClientSet.add(healthService.getNode().getAddress());
+                            serviceInstanceUnique.put(healthService.getService().getId(),healthService);
+                        }
                     }
+
+
                     if (serviceInstanceDistributionConsulClientSet.size() >= registerMaxCount) {
                         return;
                     }
 
-                    List<Member> agentMembers = destConsulClient.getAgentMembers().getValue();
-                    List<Member> consulClientNodeList = agentMembers
-                            .stream()
-                            .filter(it -> it.getTags().containsKey("role") && it.getTags().get("role").equals("node"))
-                            .collect(Collectors.toList());
+                    Set<String> consulClientNodeSet = ConsulUtils.getConsulClientNodeAddressSet(destConsulClient);
 
-                    Set<String> consulClientNodeSet = consulClientNodeList.stream().map(it -> it.getAddress()).collect(Collectors.toSet());
                     consulClientNodeSet.removeAll(serviceInstanceDistributionConsulClientSet);
-                    
+
                     doChoseConsulClientServerRegister(consulClientNodeSet,serviceInstanceUnique,taskDO);
                 });
 

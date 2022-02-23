@@ -25,6 +25,7 @@ import com.alibaba.nacossync.monitor.MetricsManager;
 import com.alibaba.nacossync.pojo.model.TaskDO;
 import com.alibaba.nacossync.util.ConsulUtils;
 import com.ecwid.consul.v1.ConsulClient;
+import com.ecwid.consul.v1.OperationException;
 import com.ecwid.consul.v1.QueryParams;
 import com.ecwid.consul.v1.Response;
 import com.ecwid.consul.v1.agent.model.NewService;
@@ -76,12 +77,20 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         try {
             specialSyncEventBus.unsubscribe(taskDO);
 
-            ConsulClient destConsulClient = destConsulServerHolder.get(taskDO.getDestClusterId());
+            ConsulClientEnhance destConsulClient = destConsulServerHolder.get(taskDO.getDestClusterId());
             Response<List<HealthService>> allInstances = destConsulClient.getHealthServices(taskDO.getServiceName(), true , QueryParams.DEFAULT);
+            Set<String> consulClientNodeAddressSet = ConsulUtils.getConsulClientNodeAddressSet(destConsulClient);
+
             for (HealthService instance : allInstances.getValue()) {
                 if (needDelete(instance.getService().getMeta(), taskDO)) {
-                    ConsulClientEnhance destConsulClientEnhance = (ConsulClientEnhance) destConsulClient;
-                    destConsulClientEnhance.agentServiceDeregister(instance.getService().getId(),null,instance.getService().getAddress());
+                    for (String consulAddress : consulClientNodeAddressSet) {
+                        ConsulClient consulClient = new ConsulClient(instance.getNode().getAddress(),8500);
+                        try {
+                            consulClient.agentServiceDeregister(instance.getService().getId(),null);
+                        } catch (Exception e) {
+                            log.warn("反注册服务实例失败，serviceName:{}  serviceId：{}" , instance.getService().getService(),instance.getService().getId());
+                        }
+                    }
                 }
             }
 
@@ -130,13 +139,15 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
 
     private void cleanAllOldInstance(TaskDO taskDO, ConsulClient destNamingService, Set<String> instanceKeys) {
         List<HealthService> allInstances = destNamingService.getHealthServices(taskDO.getServiceName(),true,QueryParams.DEFAULT).getValue();
-        for (HealthService instance : allInstances) {
-            if (needDelete(instance.getService().getMeta(), taskDO)
-                    && instance.getChecks().size() > 1
-                && !instanceKeys.contains(composeInstanceKey(instance.getService().getAddress(), instance.getService().getPort()))) {
 
-                ConsulClientEnhance consulClientEnhance = (ConsulClientEnhance)destNamingService;
-                consulClientEnhance.agentServiceDeregister(instance.getService().getId(),null,instance.getService().getAddress());
+        for (HealthService instance : allInstances) {
+            try {
+                if (needDelete(instance.getService().getMeta(), taskDO) && !instanceKeys.contains(composeInstanceKey(instance.getService().getAddress(), instance.getService().getPort()))) {
+                    ConsulClient consulClient = new ConsulClient(instance.getNode().getAddress(),8500);
+                    consulClient.agentServiceDeregister(instance.getService().getId(),null);
+                }
+            } catch (Exception e) {
+                log.warn("服务实例cleanAllOldInstance 异常 , 服务实例ID: {}" ,instance.getService().getId(),e);
             }
         }
     }
@@ -146,12 +157,14 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         for (HealthService healthService : healthServiceList) {
             if (needSync(ConsulUtils.transferMetadata(healthService.getService().getTags()))) {
                 try {
-                    destConsulClient.agentServiceRegister(buildSyncInstance(healthService, taskDO));
+                    NewService newService = buildSyncInstance(healthService, taskDO);
+
+                    destConsulClient.agentServiceRegister(newService);
                     instanceKeys.add(composeInstanceKey(healthService.getService().getAddress(),
                         healthService.getService().getPort()));
                 } catch (Exception e) {
-                    log.warn("Sync task from consul to consul was failed , healthService address : {} , port : {} " ,
-                            healthService.getService().getAddress(),healthService.getService().getPort() , e);
+                    log.warn("Sync task from consul to consul was failed , healthService serviceName: {} address : {} , port : {} " ,
+                            healthService.getService().getService(),healthService.getService().getAddress(),healthService.getService().getPort() , e);
                 }
             }
         }
@@ -163,7 +176,7 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         temp.setAddress(instance.getService().getAddress());
         temp.setPort(instance.getService().getPort());
         temp.setName(instance.getService().getService());
-        temp.setTags(ConsulUtils.transferTags(instance.getService().getTags()));
+        temp.setTags(instance.getService().getTags());
         temp.setId(instance.getService().getId());
         NewService.Check check = new NewService.Check();
         String httpCheck = null;
@@ -186,7 +199,7 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         return temp;
     }
 
-    private String composeInstanceKey(String ip, int port) {
+    private String composeInstanceKey(String ip, Integer port) {
         return ip + ":" + port;
     }
 

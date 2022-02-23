@@ -13,11 +13,11 @@
 package com.alibaba.nacossync.util;
 
 import com.alibaba.nacos.client.naming.utils.CollectionUtils;
+import com.alibaba.nacossync.extension.support.ConsulClientEnhance;
+import com.ecwid.consul.v1.agent.model.Member;
 import com.google.common.collect.Lists;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -29,23 +29,34 @@ public class ConsulUtils {
         Map<String, String> metadata = new HashMap<>();
         if (!CollectionUtils.isEmpty(tags)) {
             return tags.stream().filter(tag -> tag.split("=", -1).length == 2).map(tag -> tag.split("=", -1))
-                .collect(Collectors.toMap(tagSplitArray -> tagSplitArray[0], tagSplitArray -> tagSplitArray[1] , (v1,v2) -> v1));
+                .collect(Collectors.toMap(
+                        tagSplitArray -> tagSplitArray[0]
+                                .replaceAll("\\.","_")
+                                .replaceAll("\'","")
+                                .replaceAll("\"",""),
+                        tagSplitArray -> tagSplitArray[1] , (v1,v2) -> v1));
         }
         return metadata;
     }
 
 
-    public static List<String> transferTags(List<String> tags) {
-        List<String> newTags = Lists.newArrayList();
-
-        if (!CollectionUtils.isEmpty(tags)) {
-            for (String tag : tags) {
-                if (tag.contains("//")) {
-                    String tagNew = tag.replaceAll("//", "/");
-                    newTags.add(tagNew);
-                }
-            }
+    /**
+     * 获取所有的Consul Client 节点的IP地址
+     * @param destConsulClient
+     * @return
+     */
+    public static Set<String> getConsulClientNodeAddressSet(ConsulClientEnhance destConsulClient) {
+        if (Objects.isNull(destConsulClient)) {
+            throw new IllegalArgumentException("destConsulClient is Null");
         }
-        return newTags;
+
+        List<Member> agentMembers = destConsulClient.getAgentMembers().getValue();
+        List<Member> consulClientNodeList = agentMembers
+                .stream()
+                .filter(it -> it.getTags().containsKey("role") && it.getTags().get("role").equals("node"))
+                .collect(Collectors.toList());
+
+        Set<String> consulClientNodeSet = consulClientNodeList.stream().map(it -> it.getAddress()).collect(Collectors.toSet());
+        return consulClientNodeSet;
     }
 }
