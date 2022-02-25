@@ -28,6 +28,8 @@ import com.ecwid.consul.v1.ConsulClient;
 import com.ecwid.consul.v1.QueryParams;
 import com.ecwid.consul.v1.Response;
 import com.ecwid.consul.v1.agent.model.NewService;
+import com.ecwid.consul.v1.catalog.CatalogServicesRequest;
+import com.ecwid.consul.v1.health.HealthServicesRequest;
 import com.ecwid.consul.v1.health.model.Check;
 import com.ecwid.consul.v1.health.model.HealthService;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +50,10 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
     /**
      * 匹配Consul 健康检查地址正则
      */
-    private static  final         Pattern pattern = Pattern.compile("http:\\/\\/\\s?(\\d*.\\d*.\\d*.\\d*?:?\\d*(/[a-zA-Z0-9?=\\w\\p{Punct}]*)*):", Pattern.CASE_INSENSITIVE);
+
+    //     private static  final         Pattern pattern = Pattern.compile("http:\\/\\/\\s?(\\d*.\\d*.\\d*.\\d*?:?\\d*(/[a-zA-Z0-9?=\\w\\p{Punct}]*)*):", Pattern.CASE_INSENSITIVE);
+
+    private static  final         Pattern pattern = Pattern.compile("http:\\/\\/\\s?(\\d*.\\d*.\\d*.\\d*:?\\d*(/?[_-a-zA-Z]*)*)", Pattern.CASE_INSENSITIVE);
 
     @Autowired
     private MetricsManager metricsManager;
@@ -78,7 +83,7 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
             specialSyncEventBus.unsubscribe(taskDO);
 
             ConsulClientEnhance destConsulClient = destConsulServerHolder.get(taskDO.getDestClusterId());
-            Response<List<HealthService>> allInstances = destConsulClient.getHealthServices(taskDO.getServiceName(), true , QueryParams.DEFAULT);
+            Response<List<HealthService>> allInstances = destConsulClient.getHealthServices(taskDO.getServiceName(), false , QueryParams.DEFAULT);
             Set<String> consulClientNodeAddressSet = ConsulUtils.getConsulClientNodeAddressSet(destConsulClient);
 
             for (HealthService instance : allInstances.getValue()) {
@@ -109,7 +114,7 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
 
             ConsulClient destConsulClient = destConsulServerHolder.get(taskDO.getDestClusterId());
 
-            List<HealthService> healthServiceList = consulClient.getHealthServices(taskDO.getServiceName(), true, QueryParams.DEFAULT).getValue();
+            List<HealthService> healthServiceList = consulClient.getHealthServices(taskDO.getServiceName(), false, QueryParams.DEFAULT).getValue();
             List<HealthService> uniqueServiceList = ConsulUtils.getUniqueServiceList(healthServiceList);
 
             Set<String> instanceKeys = new HashSet<>();
@@ -198,6 +203,55 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
             matchText =  matcher.group(1);
         }
         return matchText;
+    }
+
+
+    public static void main(String[] args) {
+        /*String txt = "HTTP GET http://10.102.213.196:8081/unex-basic/actuator/health: 200  Output: {\"status\":\"UP\",\"details\":{\"diskSpace\":{\"status\":\"UP\",\"details\":{\"total\":1798842351616,\"free\":783181774848,\"threshold\":10485760}},\"db\":{\"status\":\"UP\",\"details\":{\"database\":\"MySQL\",\"hello\":1}},\"refreshScope\":{\"status\":\"UP\"},\"hystrix\":{\"status\":\"UP\"}}}";
+
+
+        String healthURL = findHealthURL(txt);
+        System.out.println("healthURL = " + healthURL);*/
+
+        String txt = "http://10.101.6.116:8500/v1/catalog/services";
+
+        ConsulClient consulClient = new ConsulClient("10.101.6.116",8500);
+
+       /* CatalogServicesRequest request = CatalogServicesRequest.newBuilder()
+                .setQueryParams(QueryParams.DEFAULT)
+                .build();
+        List<String> services = new ArrayList<>();
+
+        Map<String, List<String>> value = consulClient.getCatalogServices(request).getValue();
+        value.forEach((k, v) -> {
+            HealthServicesRequest request1 = HealthServicesRequest.newBuilder().setPassing(true).build();
+           List<HealthService> healthServices = consulClient.getHealthServices(k, request1).getValue();
+            if(healthServices.size()==0) {
+                services.add(k);
+            }
+        });
+
+        for (String service : services) {
+            System.out.println("service = " + service);
+        }*/
+
+        // 10.102.64.179:8080
+        // http://10.102.224.155:8080/cms2/actuator/health
+        // 10.102.224.182:8080
+
+        String healthCheck = "http://10.102.222.182:8080/unex2/inventory-manage/actuator/health";
+        NewService newService = new NewService();
+        newService.setId(UUID.randomUUID().toString());
+        newService.setAddress("10.102.222.182");
+        newService.setPort(8080);
+        newService.setName("unex2-inventory-manage");
+
+        NewService.Check check = new NewService.Check();
+        check.setHttp(healthCheck);
+        check.setInterval("10s");
+        newService.setCheck(check);
+
+        consulClient.agentServiceRegister(newService);
     }
 
 }
