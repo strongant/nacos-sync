@@ -17,25 +17,33 @@
 package com.alibaba.nacossync.api;
 
 import com.alibaba.nacossync.constant.ClusterTypeEnum;
+import com.alibaba.nacossync.extension.holder.ConsulServerHolder;
+import com.alibaba.nacossync.extension.support.ConsulClientEnhance;
 import com.alibaba.nacossync.pojo.request.ClusterAddRequest;
 import com.alibaba.nacossync.pojo.request.ClusterDeleteRequest;
 import com.alibaba.nacossync.pojo.request.ClusterDetailQueryRequest;
 import com.alibaba.nacossync.pojo.request.ClusterListQueryRequest;
-import com.alibaba.nacossync.pojo.result.ClusterAddResult;
-import com.alibaba.nacossync.pojo.result.ClusterDeleteResult;
-import com.alibaba.nacossync.pojo.result.ClusterDetailQueryResult;
-import com.alibaba.nacossync.pojo.result.ClusterListQueryResult;
-import com.alibaba.nacossync.pojo.result.ClusterTypeResult;
+import com.alibaba.nacossync.pojo.result.*;
 import com.alibaba.nacossync.template.SkyWalkerTemplate;
 import com.alibaba.nacossync.template.processor.ClusterAddProcessor;
 import com.alibaba.nacossync.template.processor.ClusterDeleteProcessor;
 import com.alibaba.nacossync.template.processor.ClusterDetailQueryProcessor;
 import com.alibaba.nacossync.template.processor.ClusterListQueryProcessor;
+import com.alibaba.nacossync.util.ConsulUtils;
+import com.ecwid.consul.json.GsonFactory;
+import com.ecwid.consul.v1.ConsulClient;
+import com.ecwid.consul.v1.QueryParams;
+import com.ecwid.consul.v1.Response;
+import com.ecwid.consul.v1.catalog.CatalogNodesRequest;
+import com.ecwid.consul.v1.catalog.CatalogServicesRequest;
+import com.ecwid.consul.v1.health.HealthServicesRequest;
+import com.ecwid.consul.v1.health.model.HealthService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author NacosSync
@@ -53,13 +61,17 @@ public class ClusterApi {
 
     private final ClusterListQueryProcessor clusterListQueryProcessor;
 
+    private final ConsulServerHolder destConsulServerHolder;
+
     public ClusterApi(
         ClusterAddProcessor clusterAddProcessor, ClusterDeleteProcessor clusterDeleteProcessor,
-        ClusterDetailQueryProcessor clusterDetailQueryProcessor, ClusterListQueryProcessor clusterListQueryProcessor) {
+        ClusterDetailQueryProcessor clusterDetailQueryProcessor, ClusterListQueryProcessor clusterListQueryProcessor,
+        ConsulServerHolder destConsulServerHolder) {
         this.clusterAddProcessor = clusterAddProcessor;
         this.clusterDeleteProcessor = clusterDeleteProcessor;
         this.clusterDetailQueryProcessor = clusterDetailQueryProcessor;
         this.clusterListQueryProcessor = clusterListQueryProcessor;
+        this.destConsulServerHolder = destConsulServerHolder;
     }
 
     @RequestMapping(path = "/v1/cluster/list", method = RequestMethod.GET)
@@ -95,6 +107,104 @@ public class ClusterApi {
     public ClusterTypeResult getClusterType() {
 
         return new ClusterTypeResult(ClusterTypeEnum.getClusterTypeCodes());
+    }
+
+
+    @RequestMapping(path = "/v1/cluster/syncResult", method = RequestMethod.GET)
+    public ClusterSyncResult syncResult(@RequestParam("sourceClusterId") String sourceClusterId, @RequestParam("destClusterId") String destClusterId) {
+
+        ClusterSyncResult clusterSyncResult = new ClusterSyncResult();
+        Integer sourceServiceInstanceCount = 0;
+        Integer destServiceInstanceCount = 0;
+
+        ConsulClientEnhance sourceConsulClientEnhance = destConsulServerHolder.get(sourceClusterId);
+        ConsulClientEnhance destConsulClientEnhance = destConsulServerHolder.get(destClusterId);
+
+
+        sourceServiceInstanceCount = getPassingServiceInstanceCount(sourceServiceInstanceCount, sourceConsulClientEnhance);
+        destServiceInstanceCount = getPassingServiceInstanceCount(destServiceInstanceCount, destConsulClientEnhance);
+
+        boolean syncResult = sourceServiceInstanceCount.equals(destServiceInstanceCount);
+
+        clusterSyncResult.setSourceServiceInstanceCount(sourceServiceInstanceCount);
+        clusterSyncResult.setDestServiceInstanceCount(destServiceInstanceCount);
+        clusterSyncResult.setSyncResult(syncResult);
+
+        CatalogNodesRequest catalogNodesRequest = CatalogNodesRequest.newBuilder()
+                .setQueryParams(QueryParams.DEFAULT)
+                .build();
+
+        log.info("原集群:{} , 目标集群:{} 服务实例同步结果:{}" , sourceConsulClientEnhance.getCatalogNodes(catalogNodesRequest).getValue(),
+                destConsulClientEnhance.getCatalogNodes(catalogNodesRequest).getValue(),syncResult);
+
+        return clusterSyncResult;
+    }
+
+
+    @RequestMapping(path = "/v1/cluster/deregister", method = RequestMethod.GET)
+    public ClusterSyncResult syncResult(@RequestParam("destClusterId") String destClusterId) {
+
+        ConsulClientEnhance destConsulClientEnhance = destConsulServerHolder.get(destClusterId);
+        ClusterSyncResult clusterSyncResult = new ClusterSyncResult();
+
+        if (Objects.isNull(destConsulClientEnhance)) {
+            clusterSyncResult.setSuccess(false);
+            return clusterSyncResult;
+        }
+
+        CatalogServicesRequest catalogServicesRequest = CatalogServicesRequest.newBuilder()
+                .setQueryParams(QueryParams.DEFAULT)
+                .build();
+
+        Map<String, List<String>> catalogServices = destConsulClientEnhance.getCatalogServices(catalogServicesRequest).getValue();
+
+        for (String key : catalogServices.keySet()) {
+
+            if (key.equals("consul")) {
+                continue;
+            }
+
+            HealthServicesRequest servicesRequest = HealthServicesRequest.newBuilder()
+                    .setQueryParams(QueryParams.DEFAULT)
+                    .build();
+
+            List<HealthService> healthServiceList = destConsulClientEnhance.getHealthServices(key, servicesRequest).getValue();
+            for (HealthService healthService : healthServiceList) {
+                try {
+                    String nodeAddress = healthService.getNode().getAddress();
+                    ConsulClient consulClient = new ConsulClient(nodeAddress, 8500);
+                    String id = healthService.getService().getId();
+                    Response<Void> deregister = consulClient.agentServiceDeregister(id);
+                    log.info("反注册服务实例ID:{}, 结果:{}",id, GsonFactory.getGson().toJson(deregister));
+                } catch (Exception e) {
+                    log.warn("反注册实例失败 服务实例ID:{}" , healthService.getService().getId()  ,e );
+                }
+            }
+        }
+
+        return clusterSyncResult;
+    }
+
+    private Integer getPassingServiceInstanceCount(Integer sourceServiceInstanceCount, ConsulClientEnhance sourceConsulClientEnhance) {
+
+        CatalogServicesRequest catalogServicesRequest = CatalogServicesRequest.newBuilder()
+                .setQueryParams(QueryParams.DEFAULT)
+                .build();
+
+        Map<String, List<String>> catalogServices = sourceConsulClientEnhance.getCatalogServices(catalogServicesRequest).getValue();
+
+        for (String key : catalogServices.keySet()) {
+            HealthServicesRequest servicesRequest = HealthServicesRequest.newBuilder()
+                    .setPassing(true)
+                    .setQueryParams(QueryParams.DEFAULT)
+                    .build();
+
+            List<HealthService> healthServiceList = sourceConsulClientEnhance.getHealthServices(key, servicesRequest).getValue();
+            List<HealthService> uniqueServiceList = ConsulUtils.getUniqueServiceList(healthServiceList);
+            sourceServiceInstanceCount += uniqueServiceList.size();
+        }
+
+        return sourceServiceInstanceCount;
     }
 
 }

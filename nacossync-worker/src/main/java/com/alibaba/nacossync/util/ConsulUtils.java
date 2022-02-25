@@ -15,6 +15,7 @@ package com.alibaba.nacossync.util;
 import com.alibaba.nacos.client.naming.utils.CollectionUtils;
 import com.alibaba.nacossync.extension.support.ConsulClientEnhance;
 import com.ecwid.consul.v1.agent.model.Member;
+import com.ecwid.consul.v1.health.model.HealthService;
 import com.google.common.collect.Lists;
 
 import java.util.*;
@@ -58,5 +59,19 @@ public class ConsulUtils {
 
         Set<String> consulClientNodeSet = consulClientNodeList.stream().map(it -> it.getAddress()).collect(Collectors.toSet());
         return consulClientNodeSet;
+    }
+
+
+    public static List<HealthService> getUniqueServiceList(List<HealthService> healthServiceList) {
+        Set<String> ipPortSet = new HashSet<>();
+        List<HealthService> newHealthServiceList = Lists.newArrayList();
+        for (HealthService healthService : healthServiceList) {
+            HealthService.Service service = healthService.getService();
+            if (healthService.getChecks().size() > 1 && !ipPortSet.contains(String.format("%s:%s", service.getAddress(), service.getPort())))  {
+                newHealthServiceList.add(healthService);
+                ipPortSet.add(String.format("%s:%s", service.getAddress(), service.getPort()));
+            }
+        }
+        return newHealthServiceList;
     }
 }

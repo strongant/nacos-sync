@@ -25,15 +25,12 @@ import com.alibaba.nacossync.monitor.MetricsManager;
 import com.alibaba.nacossync.pojo.model.TaskDO;
 import com.alibaba.nacossync.util.ConsulUtils;
 import com.ecwid.consul.v1.ConsulClient;
-import com.ecwid.consul.v1.OperationException;
 import com.ecwid.consul.v1.QueryParams;
 import com.ecwid.consul.v1.Response;
 import com.ecwid.consul.v1.agent.model.NewService;
 import com.ecwid.consul.v1.health.model.Check;
 import com.ecwid.consul.v1.health.model.HealthService;
-import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.net.URISyntaxException;
@@ -48,7 +45,10 @@ import java.util.regex.Pattern;
 @NacosSyncService(sourceCluster = ClusterTypeEnum.CONSUL, destinationCluster = ClusterTypeEnum.CONSUL)
 public class ConsulSyncToConsulServiceImpl implements SyncService {
 
-    private static  final         Pattern pattern = Pattern.compile("http:\\/\\/\\s?(\\d*.\\d*.\\d*.\\d*:?\\d*/[a-zA-Z]*/?[a-zA-Z]*)", Pattern.CASE_INSENSITIVE);
+    /**
+     * 匹配Consul 健康检查地址正则
+     */
+    private static  final         Pattern pattern = Pattern.compile("http:\\/\\/\\s?(\\d*.\\d*.\\d*.\\d*?:?\\d*(/[a-zA-Z0-9?=\\w\\p{Punct}]*)*):", Pattern.CASE_INSENSITIVE);
 
     @Autowired
     private MetricsManager metricsManager;
@@ -110,7 +110,7 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
             ConsulClient destConsulClient = destConsulServerHolder.get(taskDO.getDestClusterId());
 
             List<HealthService> healthServiceList = consulClient.getHealthServices(taskDO.getServiceName(), true, QueryParams.DEFAULT).getValue();
-            List<HealthService> uniqueServiceList = doUniqueServiceList(healthServiceList);
+            List<HealthService> uniqueServiceList = ConsulUtils.getUniqueServiceList(healthServiceList);
 
             Set<String> instanceKeys = new HashSet<>();
             overrideAllInstance(taskDO, destConsulClient, uniqueServiceList, instanceKeys);
@@ -122,19 +122,6 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
             return false;
         }
         return true;
-    }
-
-    private List<HealthService> doUniqueServiceList(List<HealthService> healthServiceList) {
-        Set<String> ipPortSet = new HashSet<>();
-        List<HealthService> newHealthServiceList = Lists.newArrayList();
-        for (HealthService healthService : healthServiceList) {
-            HealthService.Service service = healthService.getService();
-            if (healthService.getChecks().size() > 1 && !ipPortSet.contains(String.format("%s:%s", service.getAddress(), service.getPort())))  {
-                newHealthServiceList.add(healthService);
-                ipPortSet.add(String.format("%s:%s", service.getAddress(), service.getPort()));
-            }
-        }
-        return newHealthServiceList;
     }
 
     private void cleanAllOldInstance(TaskDO taskDO, ConsulClient destNamingService, Set<String> instanceKeys) {
