@@ -17,37 +17,31 @@
 package com.alibaba.nacossync.timer;
 
 import com.alibaba.nacossync.constant.MetricsStatisticsType;
-import com.alibaba.nacossync.constant.TaskStatusEnum;
 import com.alibaba.nacossync.dao.TaskAccessService;
 import com.alibaba.nacossync.extension.holder.ConsulServerHolder;
 import com.alibaba.nacossync.extension.impl.ConsulSyncToConsulServiceImpl;
-import com.alibaba.nacossync.extension.support.ConsulClientEnhance;
 import com.alibaba.nacossync.monitor.MetricsManager;
 import com.alibaba.nacossync.pojo.model.TaskDO;
-import com.alibaba.nacossync.util.ConsulUtils;
 import com.ecwid.consul.v1.ConsulClient;
-import com.ecwid.consul.v1.Response;
-import com.ecwid.consul.v1.health.HealthServicesRequest;
 import com.ecwid.consul.v1.health.model.HealthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
 
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- *
+ * 自动清理
  * @author wenhui.bai
  * @version $Id: SkyWalkerServices.java, v 0.1 2018-09-26 AM1:39 NacosSync Exp $$
  */
 @Slf4j
 @Service
-public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
+public class AutoDeregisterServiceInstanceTaskTimer implements CommandLineRunner {
 
     @Autowired
     private MetricsManager metricsManager;
@@ -65,79 +59,35 @@ public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
     private ConsulSyncToConsulServiceImpl consulSyncToConsulService;
 
 
-    @Value("${sync.register.max.count:3}")
-    private Integer registerMaxCount;
+    @Value("${sync.deregisterEnable:true}")
+    private boolean deregisterEnable;
     
 
     @Override
     public void run(String... args) {
         /** Fetch the task list from the database every 3 seconds */
-        scheduledExecutorService.scheduleWithFixedDelay(new CheckServiceOnlyOneInstanceThread(), 0, 3000,
+        scheduledExecutorService.scheduleWithFixedDelay(new AutoDeregisterServiceInstanceThread(), 0, 3000,
                 TimeUnit.MILLISECONDS);
 
     }
 
-    private class CheckServiceOnlyOneInstanceThread implements Runnable {
+    private class AutoDeregisterServiceInstanceThread implements Runnable {
 
         @Override
         public void run() {
 
+            if (!deregisterEnable) {
+                return;
+            }
+
             Long start = System.currentTimeMillis();
             try {
 
-
-                Iterable<TaskDO> taskDOS = taskAccessService.findAll();
-
-                taskDOS.forEach(taskDO -> {
-
-                    if ((TaskStatusEnum.DELETE.getCode().equals(taskDO.getTaskStatus()))) {
-                        return;
-                    }
-
-                    String serviceName = taskDO.getServiceName();
-                    ConsulClientEnhance destConsulClient = consulServerHolder.get(taskDO.getDestClusterId());
-
-                    HealthServicesRequest healthServicesRequest = HealthServicesRequest.newBuilder()
-                            .setPassing(true)
-                            .build();
-
-                    Response<List<HealthService>> healthServices = destConsulClient.getHealthServices(serviceName, healthServicesRequest);
-                    List<HealthService> healthServiceList = healthServices.getValue();
-                    if (ObjectUtils.isEmpty(healthServiceList)) {
-                        return;
-                    }
-
-                    Set<String> serviceInstanceDistributionConsulClientSet = new HashSet<>();
-                    Map<String,HealthService> serviceInstanceUnique = new HashMap<>();
-
-                    for (HealthService healthService : healthServiceList) {
-                        String serviceInstanceId = healthService.getService().getId();
-                        // Node Check  + Health Check 都有效才需要做冗余注册
-                        String nodeAddress = healthService.getNode().getAddress();
-                        if(healthService.getChecks().size() > 1) {
-                            serviceInstanceDistributionConsulClientSet.add(nodeAddress);
-                            serviceInstanceUnique.put(serviceInstanceId,healthService);
-                            continue;
-                        }
-                    }
-
-
-                    if (serviceInstanceDistributionConsulClientSet.size() >= registerMaxCount) {
-                        return;
-                    }
-
-                    Set<String> consulClientNodeSet = ConsulUtils.getConsulClientNodeAddressSet(destConsulClient);
-
-                    consulClientNodeSet.removeAll(serviceInstanceDistributionConsulClientSet);
-
-                    doChoseConsulClientServerRegister(consulClientNodeSet,serviceInstanceUnique,taskDO);
-                });
-
             } catch (Exception e) {
-                log.error("CheckServiceOnlyOneInstanceThread Exception", e);
+                log.error("AutoDeregisterServiceInstanceThread Exception", e);
             }
 
-            metricsManager.record(MetricsStatisticsType.DISPATCHER_TASK, System.currentTimeMillis() - start);
+            metricsManager.record(MetricsStatisticsType.DEREGISTER_SERVICE, System.currentTimeMillis() - start);
         }
     }
 

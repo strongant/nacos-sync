@@ -14,9 +14,11 @@ package com.alibaba.nacossync.util;
 
 import com.alibaba.nacos.client.naming.utils.CollectionUtils;
 import com.alibaba.nacossync.extension.support.ConsulClientEnhance;
+import com.ecwid.consul.v1.ConsulClient;
 import com.ecwid.consul.v1.agent.model.Member;
 import com.ecwid.consul.v1.health.model.HealthService;
 import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
  * @author paderlol
  * @date: 2019-04-25 00:01
  */
+@Slf4j
 public class ConsulUtils {
     public static Map<String, String> transferMetadata(List<String> tags) {
         Map<String, String> metadata = new HashMap<>();
@@ -73,5 +76,14 @@ public class ConsulUtils {
             }
         }
         return newHealthServiceList;
+    }
+
+    public void doDeregisterServiceInstance(String nodeAddress,String serviceInstanceId) {
+        try {
+            ConsulClient consulClient = new ConsulClient(nodeAddress,8500);
+            consulClient.agentServiceDeregister(serviceInstanceId);
+        } catch (Exception e) {
+            log.warn("不健康服务实例{}从Consul Client 节点:{}反注册异常",serviceInstanceId,nodeAddress,e);
+        }
     }
 }
