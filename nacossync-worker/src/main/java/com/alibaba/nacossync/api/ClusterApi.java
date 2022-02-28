@@ -123,7 +123,7 @@ public class ClusterApi {
         ConsulClientEnhance destConsulClientEnhance = destConsulServerHolder.get(destClusterId);
 
 
-        boolean syncResult = compareHealthServiceInstances(sourceConsulClientEnhance, destConsulClientEnhance);
+        boolean syncResult = compareHealthServiceInstances(sourceConsulClientEnhance, destConsulClientEnhance,sourceServiceInstanceCount,destServiceInstanceCount);
 
         clusterSyncResult.setSourceServiceInstanceCount(sourceServiceInstanceCount);
         clusterSyncResult.setDestServiceInstanceCount(destServiceInstanceCount);
@@ -185,7 +185,9 @@ public class ClusterApi {
     }
 
     private boolean compareHealthServiceInstances(ConsulClientEnhance sourceConsulClientEnhance,
-                                                  ConsulClientEnhance destConsulClientEnhance) {
+                                                  ConsulClientEnhance destConsulClientEnhance,
+                                                  Integer sourceServiceInstanceCount,
+                                                  Integer destServiceInstanceCount) {
 
         boolean result = true;
 
@@ -207,6 +209,10 @@ public class ClusterApi {
 
             List<HealthService> sourceUniqueServiceList = ConsulUtils.getUniqueServiceList(sourceHealthServiceList);
             List<HealthService> destUniqueServiceList = ConsulUtils.getUniqueServiceList(destHealthServiceList);
+
+            sourceServiceInstanceCount += sourceUniqueServiceList.size();
+            destServiceInstanceCount += destUniqueServiceList.size();
+
             if (sourceUniqueServiceList.size() != destUniqueServiceList.size()) {
                 result = false;
                 sourceUniqueServiceList.removeAll(destUniqueServiceList);
