@@ -116,25 +116,21 @@ public class ClusterApi {
     public ClusterSyncResult syncResult(@RequestParam("sourceClusterId") String sourceClusterId, @RequestParam("destClusterId") String destClusterId) {
 
         ClusterSyncResult clusterSyncResult = new ClusterSyncResult();
-        Integer sourceServiceInstanceCount = 0;
-        Integer destServiceInstanceCount = 0;
+
 
         ConsulClientEnhance sourceConsulClientEnhance = destConsulServerHolder.get(sourceClusterId);
         ConsulClientEnhance destConsulClientEnhance = destConsulServerHolder.get(destClusterId);
 
 
-        boolean syncResult = compareHealthServiceInstances(sourceConsulClientEnhance, destConsulClientEnhance,sourceServiceInstanceCount,destServiceInstanceCount);
+        compareHealthServiceInstances(sourceConsulClientEnhance, destConsulClientEnhance,clusterSyncResult);
 
-        clusterSyncResult.setSourceServiceInstanceCount(sourceServiceInstanceCount);
-        clusterSyncResult.setDestServiceInstanceCount(destServiceInstanceCount);
-        clusterSyncResult.setSyncResult(syncResult);
 
         CatalogNodesRequest catalogNodesRequest = CatalogNodesRequest.newBuilder()
                 .setQueryParams(QueryParams.DEFAULT)
                 .build();
 
         log.info("原集群:{} , 目标集群:{} 服务实例同步结果:{}" , sourceConsulClientEnhance.getCatalogNodes(catalogNodesRequest).getValue(),
-                destConsulClientEnhance.getCatalogNodes(catalogNodesRequest).getValue(),syncResult);
+                destConsulClientEnhance.getCatalogNodes(catalogNodesRequest).getValue(),clusterSyncResult.getSuccess());
 
         return clusterSyncResult;
     }
@@ -184,10 +180,9 @@ public class ClusterApi {
         return clusterSyncResult;
     }
 
-    private boolean compareHealthServiceInstances(ConsulClientEnhance sourceConsulClientEnhance,
+    private void compareHealthServiceInstances(ConsulClientEnhance sourceConsulClientEnhance,
                                                   ConsulClientEnhance destConsulClientEnhance,
-                                                  Integer sourceServiceInstanceCount,
-                                                  Integer destServiceInstanceCount) {
+                                                  ClusterSyncResult clusterSyncResult) {
 
         boolean result = true;
 
@@ -196,6 +191,9 @@ public class ClusterApi {
                 .build();
 
         Map<String, List<String>> catalogServices = sourceConsulClientEnhance.getCatalogServices(catalogServicesRequest).getValue();
+
+        int sourceServiceInstanceCount = 0;
+        int destServiceInstanceCount = 0;
 
         for (String key : catalogServices.keySet()) {
 
@@ -220,7 +218,10 @@ public class ClusterApi {
             }
         }
 
-        return result;
+        clusterSyncResult.setSourceServiceInstanceCount(sourceServiceInstanceCount);
+        clusterSyncResult.setDestServiceInstanceCount(destServiceInstanceCount);
+        clusterSyncResult.setSyncResult(result);
+
     }
 
 }
