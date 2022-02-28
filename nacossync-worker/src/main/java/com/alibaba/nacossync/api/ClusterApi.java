@@ -29,6 +29,7 @@ import com.alibaba.nacossync.template.processor.ClusterAddProcessor;
 import com.alibaba.nacossync.template.processor.ClusterDeleteProcessor;
 import com.alibaba.nacossync.template.processor.ClusterDetailQueryProcessor;
 import com.alibaba.nacossync.template.processor.ClusterListQueryProcessor;
+import com.alibaba.nacossync.timer.CheckServiceOnlyOneInstanceTaskTimer;
 import com.alibaba.nacossync.util.ConsulUtils;
 import com.ecwid.consul.json.GsonFactory;
 import com.ecwid.consul.v1.ConsulClient;
@@ -178,6 +179,12 @@ public class ClusterApi {
         }
 
         return clusterSyncResult;
+    }
+
+    @RequestMapping(path = "/v1/cluster/registerMulti", method = RequestMethod.GET)
+    public ClusterSyncResult registerMulti(@RequestParam("enable") boolean enable) {
+        CheckServiceOnlyOneInstanceTaskTimer.registerMulti = enable;
+        return new ClusterSyncResult();
     }
 
     private void compareHealthServiceInstances(ConsulClientEnhance sourceConsulClientEnhance,
