@@ -20,7 +20,8 @@ public enum MetricsStatisticsType {
     DELETE_TASK_RT("nacosSync.delete.task.rt", "删除任务耗时"),
 
     DISPATCHER_TASK("nacosSync.dispatcher.task", "从数据库中分发任务"),
-    DEREGISTER_SERVICE("nacosSync.degister.service", "自动清理Consul非正常服务实例"),
+
+    BATCH_GENERATE_SYNC_TASK("nacosSync.degister.service", "自动生成Consul 同步服务task"),
 
     SYNC_ERROR("nacosSync.sync.task.error", "所有同步执行时的异常"),
 

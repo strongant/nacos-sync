@@ -185,7 +185,10 @@ public class ClusterApi {
         return clusterSyncResult;
     }
 
-    private Integer getPassingServiceInstanceCount(Integer sourceServiceInstanceCount, ConsulClientEnhance sourceConsulClientEnhance) {
+    private boolean getPassingServiceInstanceCount(ConsulClientEnhance sourceConsulClientEnhance,
+                                                   ConsulClientEnhance destConsulClientEnhance) {
+
+        boolean result = false;
 
         CatalogServicesRequest catalogServicesRequest = CatalogServicesRequest.newBuilder()
                 .setQueryParams(QueryParams.DEFAULT)
@@ -194,17 +197,24 @@ public class ClusterApi {
         Map<String, List<String>> catalogServices = sourceConsulClientEnhance.getCatalogServices(catalogServicesRequest).getValue();
 
         for (String key : catalogServices.keySet()) {
+
             HealthServicesRequest servicesRequest = HealthServicesRequest.newBuilder()
                     .setPassing(true)
                     .setQueryParams(QueryParams.DEFAULT)
                     .build();
 
-            List<HealthService> healthServiceList = sourceConsulClientEnhance.getHealthServices(key, servicesRequest).getValue();
-            List<HealthService> uniqueServiceList = ConsulUtils.getUniqueServiceList(healthServiceList);
-            sourceServiceInstanceCount += uniqueServiceList.size();
+            List<HealthService> sourceHealthServiceList = sourceConsulClientEnhance.getHealthServices(key, servicesRequest).getValue();
+            List<HealthService> destHealthServiceList = destConsulClientEnhance.getHealthServices(key, servicesRequest).getValue();
+
+            List<HealthService> sourceUniqueServiceList = ConsulUtils.getUniqueServiceList(sourceHealthServiceList);
+            List<HealthService> destUniqueServiceList = ConsulUtils.getUniqueServiceList(destHealthServiceList);
+            if (sourceUniqueServiceList.size() != destUniqueServiceList.size()) {
+                sourceUniqueServiceList.removeAll(destUniqueServiceList);
+                log.info("服务名为{}的服务，服务实例:{}源集群与目标集群同步数量不一致，请检查！",key,sourceUniqueServiceList.get(0).getService().getId());
+            }
         }
 
-        return sourceServiceInstanceCount;
+        return result;
     }
 
 }

@@ -67,7 +67,11 @@ public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
 
     @Value("${sync.register.max.count:3}")
     private Integer registerMaxCount;
-    
+
+
+    @Value("${sync.register.multi.enable:false}")
+    public static  volatile boolean registerMulti;
+
 
     @Override
     public void run(String... args) {
@@ -85,6 +89,9 @@ public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
             Long start = System.currentTimeMillis();
             try {
 
+                if (!registerMulti) {
+                    return;
+                }
 
                 Iterable<TaskDO> taskDOS = taskAccessService.findAll();
 
@@ -107,18 +114,21 @@ public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
                         return;
                     }
 
+                    List<HealthService> uniqueServiceList = ConsulUtils.getUniqueServiceList(healthServiceList);
+
+
                     Set<String> serviceInstanceDistributionConsulClientSet = new HashSet<>();
                     Map<String,HealthService> serviceInstanceUnique = new HashMap<>();
 
-                    for (HealthService healthService : healthServiceList) {
+                    for (HealthService healthService : uniqueServiceList) {
+
                         String serviceInstanceId = healthService.getService().getId();
+
                         // Node Check  + Health Check 都有效才需要做冗余注册
                         String nodeAddress = healthService.getNode().getAddress();
-                        if(healthService.getChecks().size() > 1) {
-                            serviceInstanceDistributionConsulClientSet.add(nodeAddress);
-                            serviceInstanceUnique.put(serviceInstanceId,healthService);
-                            continue;
-                        }
+
+                        serviceInstanceDistributionConsulClientSet.add(nodeAddress);
+                        serviceInstanceUnique.put(serviceInstanceId,healthService);
                     }
 
 
@@ -157,7 +167,8 @@ public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
             try {
 
                 consulClient.agentServiceRegister(consulSyncToConsulService.buildSyncInstance(healthService, taskDO));
-                log.info("CheckServiceOnlyOneInstanceThread 冗余注册服务ID:{} , 服务IP: {}  服务端口： {},注册到{} Consul Client Node." ,
+                log.info("CheckServiceOnlyOneInstanceThread 冗余注册,服务名:{} 服务ID:{} , 服务IP: {}  服务端口： {},注册到{} Consul Client Node." ,
+                        healthService.getService().getService(),
                         serviceId , healthService.getService().getAddress(),
                         healthService.getService().getPort()
                         ,consulClientNodeAddress);

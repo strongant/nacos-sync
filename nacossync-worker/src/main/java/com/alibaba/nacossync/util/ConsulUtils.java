@@ -16,6 +16,7 @@ import com.alibaba.nacos.client.naming.utils.CollectionUtils;
 import com.alibaba.nacossync.extension.support.ConsulClientEnhance;
 import com.ecwid.consul.v1.ConsulClient;
 import com.ecwid.consul.v1.agent.model.Member;
+import com.ecwid.consul.v1.health.model.Check;
 import com.ecwid.consul.v1.health.model.HealthService;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
@@ -70,12 +71,23 @@ public class ConsulUtils {
         List<HealthService> newHealthServiceList = Lists.newArrayList();
         for (HealthService healthService : healthServiceList) {
             HealthService.Service service = healthService.getService();
-            if (healthService.getChecks().size() > 1 && !ipPortSet.contains(String.format("%s:%s", service.getAddress(), service.getPort())))  {
+            List<Check> checks = healthService.getChecks();
+
+            if (checks.size() > 1 && healthServiceValid(checks) && !ipPortSet.contains(String.format("%s:%s", service.getAddress(), service.getPort())))  {
                 newHealthServiceList.add(healthService);
                 ipPortSet.add(String.format("%s:%s", service.getAddress(), service.getPort()));
             }
         }
         return newHealthServiceList;
+    }
+
+    public static boolean healthServiceValid(List<Check> checks) {
+        for (Check check : checks) {
+            if (!check.getStatus().equals(Check.CheckStatus.PASSING)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public void doDeregisterServiceInstance(String nodeAddress,String serviceInstanceId) {
