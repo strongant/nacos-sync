@@ -64,7 +64,7 @@ public class AutoGenerateBatchSyncTaskTimer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         /** Fetch the task list from the database every 3 seconds */
-        scheduledExecutorService.scheduleWithFixedDelay(new AutoGenerateConsulSyncTaskThread(), 0, 3000,
+        scheduledExecutorService.scheduleWithFixedDelay(new AutoGenerateConsulSyncTaskThread(), 0, 10000,
                 TimeUnit.MILLISECONDS);
 
     }
