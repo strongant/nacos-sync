@@ -116,15 +116,10 @@ public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
                         return;
                     }
 
-                    List<HealthService> uniqueServiceList = ConsulUtils.getUniqueServiceList(healthServiceList);
-                    if(uniqueServiceList.size() == 1 && healthServiceList.size() >= registerMaxCount) {
-                        return;
-                    }
-
                     Set<String> serviceInstanceDistributionConsulClientSet = new HashSet<>();
                     Map<String,HealthService> serviceInstanceUnique = new HashMap<>();
 
-                    for (HealthService healthService : uniqueServiceList) {
+                    for (HealthService healthService : healthServiceList) {
 
                         String serviceInstanceId = healthService.getService().getId();
 
@@ -136,7 +131,7 @@ public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
                     }
 
 
-                    if (serviceInstanceDistributionConsulClientSet.size() >= registerMaxCount) {
+                    if (healthServiceList.size() >= registerMaxCount) {
                         return;
                     }
 
