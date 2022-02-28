@@ -131,7 +131,7 @@ public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
                     }
 
 
-                    if (healthServiceList.size() >= registerMaxCount) {
+                    if (serviceInstanceDistributionConsulClientSet.size() >= registerMaxCount) {
                         return;
                     }
 
