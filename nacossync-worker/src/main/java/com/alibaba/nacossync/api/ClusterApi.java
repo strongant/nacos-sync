@@ -38,6 +38,7 @@ import com.ecwid.consul.v1.catalog.CatalogNodesRequest;
 import com.ecwid.consul.v1.catalog.CatalogServicesRequest;
 import com.ecwid.consul.v1.health.HealthServicesRequest;
 import com.ecwid.consul.v1.health.model.HealthService;
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,6 +52,7 @@ import java.util.Objects;
  */
 @Slf4j
 @RestController
+@Api
 public class ClusterApi {
 
     private final ClusterAddProcessor clusterAddProcessor;
@@ -121,10 +123,7 @@ public class ClusterApi {
         ConsulClientEnhance destConsulClientEnhance = destConsulServerHolder.get(destClusterId);
 
 
-        sourceServiceInstanceCount = getPassingServiceInstanceCount(sourceServiceInstanceCount, sourceConsulClientEnhance);
-        destServiceInstanceCount = getPassingServiceInstanceCount(destServiceInstanceCount, destConsulClientEnhance);
-
-        boolean syncResult = sourceServiceInstanceCount.equals(destServiceInstanceCount);
+        boolean syncResult = compareHealthServiceInstances(sourceConsulClientEnhance, destConsulClientEnhance);
 
         clusterSyncResult.setSourceServiceInstanceCount(sourceServiceInstanceCount);
         clusterSyncResult.setDestServiceInstanceCount(destServiceInstanceCount);
@@ -185,10 +184,10 @@ public class ClusterApi {
         return clusterSyncResult;
     }
 
-    private boolean getPassingServiceInstanceCount(ConsulClientEnhance sourceConsulClientEnhance,
-                                                   ConsulClientEnhance destConsulClientEnhance) {
+    private boolean compareHealthServiceInstances(ConsulClientEnhance sourceConsulClientEnhance,
+                                                  ConsulClientEnhance destConsulClientEnhance) {
 
-        boolean result = false;
+        boolean result = true;
 
         CatalogServicesRequest catalogServicesRequest = CatalogServicesRequest.newBuilder()
                 .setQueryParams(QueryParams.DEFAULT)
@@ -209,8 +208,9 @@ public class ClusterApi {
             List<HealthService> sourceUniqueServiceList = ConsulUtils.getUniqueServiceList(sourceHealthServiceList);
             List<HealthService> destUniqueServiceList = ConsulUtils.getUniqueServiceList(destHealthServiceList);
             if (sourceUniqueServiceList.size() != destUniqueServiceList.size()) {
+                result = false;
                 sourceUniqueServiceList.removeAll(destUniqueServiceList);
-                log.info("服务名为{}的服务，服务实例:{}源集群与目标集群同步数量不一致，请检查！",key,sourceUniqueServiceList.get(0).getService().getId());
+                log.info("服务名为{}的服务，服务实例:{}源集群与目标集群服务实例数量不一致，请检查！",key,sourceUniqueServiceList.get(0).getService().getId());
             }
         }
 

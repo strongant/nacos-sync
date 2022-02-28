@@ -16,6 +16,7 @@ import com.alibaba.nacossync.pojo.request.*;
 import com.alibaba.nacossync.pojo.result.*;
 import com.alibaba.nacossync.template.SkyWalkerTemplate;
 import com.alibaba.nacossync.template.processor.*;
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Slf4j
 @RestController
+@Api
 public class TaskApi {
 
     private final TaskUpdateProcessor taskUpdateProcessor;

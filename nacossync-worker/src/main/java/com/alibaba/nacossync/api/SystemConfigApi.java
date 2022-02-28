@@ -16,6 +16,7 @@
  */
 package com.alibaba.nacossync.api;
 
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,7 @@ import com.alibaba.nacossync.template.processor.ConfigQueryProcessor;
  */
 @Slf4j
 @RestController
+@Api
 public class SystemConfigApi {
 
     @Autowired

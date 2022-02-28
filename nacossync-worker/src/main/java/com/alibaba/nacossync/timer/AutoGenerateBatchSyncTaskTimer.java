@@ -26,6 +26,7 @@ import com.alibaba.nacossync.pojo.request.TaskBatchAddRequest;
 import com.alibaba.nacossync.pojo.result.TaskBatchAddResult;
 import com.alibaba.nacossync.template.SkyWalkerTemplate;
 import com.alibaba.nacossync.template.processor.TaskBatchAddProcessor;
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@Api
 public class AutoGenerateBatchSyncTaskTimer implements CommandLineRunner {
 
     @Autowired
@@ -75,9 +77,7 @@ public class AutoGenerateBatchSyncTaskTimer implements CommandLineRunner {
             Long start = System.currentTimeMillis();
 
             try {
-                QueryCondition queryCondition = new QueryCondition();
-                queryCondition.setClusterType(ClusterTypeEnum.CONSUL.getCode());
-                List<TaskDO> tasks = taskAccessService.findPageCriteria(1, 1, queryCondition).get().collect(Collectors.toList());
+                List<TaskDO> tasks = taskAccessService.findPageNoCriteria(0, 1).get().collect(Collectors.toList());
                 if (ObjectUtils.isEmpty(tasks)) {
                     return;
                 }

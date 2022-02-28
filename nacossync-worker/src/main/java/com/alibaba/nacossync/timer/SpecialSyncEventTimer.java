@@ -16,6 +16,7 @@ import com.alibaba.nacossync.constant.TaskStatusEnum;
 import com.alibaba.nacossync.extension.event.SpecialSyncEvent;
 import com.alibaba.nacossync.extension.event.SpecialSyncEventBus;
 import com.google.common.eventbus.EventBus;
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -31,6 +32,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
+@Api
 public class SpecialSyncEventTimer implements CommandLineRunner {
 
     @Autowired

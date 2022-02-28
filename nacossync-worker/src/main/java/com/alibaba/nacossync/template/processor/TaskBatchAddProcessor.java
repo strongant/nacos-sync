@@ -105,6 +105,9 @@ public class TaskBatchAddProcessor implements Processor<TaskBatchAddRequest, Tas
         String sourceConsulServerAddress = connectKeyList.get(0);
         String consulAddress = String.format("http://%s/v1/catalog/services", sourceConsulServerAddress);
         URI uri = HttpUtils.buildUri(consulAddress, null);
+
+        long beginMS = System.currentTimeMillis();
+
         log.info("[NacosSync] 从consul 原集群批量同步服务 {}" , consulAddress);
 
         ConsulClient consulClient = new ConsulClient(uri.getHost(), uri.getPort());
@@ -149,5 +152,8 @@ public class TaskBatchAddProcessor implements Processor<TaskBatchAddRequest, Tas
 
             taskAccessService.addTask(taskDO);
         }
+
+        log.info("[NacosSync] 从consul 原集群 {} 批量同步服务结束,创建同步服务耗时(ms):{}" , consulAddress,System.currentTimeMillis() - beginMS);
+
     }
 }

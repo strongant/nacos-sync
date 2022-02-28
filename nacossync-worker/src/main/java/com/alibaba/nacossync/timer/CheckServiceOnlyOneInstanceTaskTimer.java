@@ -29,6 +29,7 @@ import com.ecwid.consul.v1.ConsulClient;
 import com.ecwid.consul.v1.Response;
 import com.ecwid.consul.v1.health.HealthServicesRequest;
 import com.ecwid.consul.v1.health.model.HealthService;
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +48,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
+@Api
 public class CheckServiceOnlyOneInstanceTaskTimer implements CommandLineRunner {
 
     @Autowired

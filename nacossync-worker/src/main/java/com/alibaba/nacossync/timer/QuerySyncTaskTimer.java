@@ -25,6 +25,7 @@ import com.alibaba.nacossync.event.SyncTaskEvent;
 import com.alibaba.nacossync.monitor.MetricsManager;
 import com.alibaba.nacossync.pojo.model.TaskDO;
 import com.google.common.eventbus.EventBus;
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
+@Api
 public class QuerySyncTaskTimer implements CommandLineRunner {
     @Autowired
     private MetricsManager metricsManager;

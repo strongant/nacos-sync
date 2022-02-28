@@ -34,6 +34,7 @@ import com.ecwid.consul.v1.health.model.HealthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StringUtils;
 
 import java.net.URISyntaxException;
 import java.util.*;
@@ -192,19 +193,35 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         temp.setTags(instance.getService().getTags());
         temp.setId(instance.getService().getId());
         NewService.Check check = new NewService.Check();
+
+        Map<String, String> transferMetadata = ConsulUtils.transferMetadata(instance.getService().getTags());
+
         String httpCheck = null;
         for (Check instanceCheck : instance.getChecks()) {
-            if (instanceCheck.getOutput().contains("http")) {
+            if (!instanceCheck.getCheckId().equals("serfHealth") && instanceCheck.getOutput().contains("http")) {
                 httpCheck = findHealthURL(instanceCheck.getOutput());
-                check.setHttp(String.format("http://%s",httpCheck));
+                String checkURL = String.format("http://%s", httpCheck);
+
+                check.setHttp(checkURL);
+                check.setInterval("5s");
+                check.setDeregisterCriticalServiceAfter("5s");
+                break;
+            } else if(!instanceCheck.getCheckId().equals("serfHealth") && instanceCheck.getOutput().equals("")) {
+                // 一般都会定义健康检查地址，对于未定义但是服务健康检查状态正常的则进行兜底
+                String contextPath = transferMetadata.get("contextPath");
+                String checkURL = String.format("http://%s:%s", instance.getService().getAddress(),instance.getService().getPort());
+                if(StringUtils.hasText(contextPath)) {
+                    checkURL = String.format("http://%s:%s%s/", instance.getService().getAddress(),instance.getService().getPort(),contextPath);
+                }
+                check.setHttp(checkURL);
                 check.setInterval("5s");
                 check.setDeregisterCriticalServiceAfter("10s");
-                break;
             }
         }
         temp.setCheck(check);
 
-        Map<String, String> metaData = new HashMap<>(ConsulUtils.transferMetadata(instance.getService().getTags()));
+
+        Map<String, String> metaData = new HashMap<>(transferMetadata);
         metaData.put(SkyWalkerConstants.DEST_CLUSTERID_KEY, taskDO.getDestClusterId());
         metaData.put(SkyWalkerConstants.SYNC_SOURCE_KEY,
             skyWalkerCacheServices.getClusterType(taskDO.getSourceClusterId()).getCode());
