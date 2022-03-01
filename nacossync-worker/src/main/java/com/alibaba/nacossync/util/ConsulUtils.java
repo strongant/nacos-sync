@@ -83,7 +83,7 @@ public class ConsulUtils {
 
     public static boolean healthServiceValid(List<Check> checks) {
         for (Check check : checks) {
-            if (!check.getStatus().equals(Check.CheckStatus.PASSING)) {
+            if ( check.getOutput().equals("") || !check.getStatus().equals(Check.CheckStatus.PASSING)) {
                 return false;
             }
         }

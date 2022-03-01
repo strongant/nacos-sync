@@ -16,12 +16,10 @@ import com.alibaba.nacossync.pojo.request.*;
 import com.alibaba.nacossync.pojo.result.*;
 import com.alibaba.nacossync.template.SkyWalkerTemplate;
 import com.alibaba.nacossync.template.processor.*;
+import com.alibaba.nacossync.timer.AutoGenerateBatchSyncTaskTimer;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author NacosSync
@@ -103,5 +101,11 @@ public class TaskApi {
     public BaseResult taskBatchAdd(@RequestBody TaskBatchAddRequest batchAddTaskRequest) {
 
         return SkyWalkerTemplate.run(taskBatchAddProcessor, batchAddTaskRequest, new TaskBatchAddResult());
+    }
+
+    @RequestMapping(path = "/v1/task/stopAenerateBatchTask", method = RequestMethod.GET)
+    public BaseResult getByTaskId(@RequestParam("enable") boolean enabled) {
+        AutoGenerateBatchSyncTaskTimer.autoGenerateTask = enabled;
+        return new BaseResult();
     }
 }

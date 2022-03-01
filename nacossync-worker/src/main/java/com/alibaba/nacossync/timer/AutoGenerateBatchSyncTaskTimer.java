@@ -60,6 +60,8 @@ public class AutoGenerateBatchSyncTaskTimer implements CommandLineRunner {
     @Autowired
     private TaskBatchAddProcessor taskBatchAddProcessor;
 
+    public volatile static boolean autoGenerateTask = false;
+
 
     @Override
     public void run(String... args) {
@@ -73,6 +75,10 @@ public class AutoGenerateBatchSyncTaskTimer implements CommandLineRunner {
 
         @Override
         public void run() {
+
+            if (!autoGenerateTask) {
+                return;
+            }
 
             Long start = System.currentTimeMillis();
 

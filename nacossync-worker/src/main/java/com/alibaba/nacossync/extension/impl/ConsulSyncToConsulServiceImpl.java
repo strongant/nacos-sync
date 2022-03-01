@@ -154,8 +154,7 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         for (HealthService instance : allInstances) {
             try {
                 if (deregisterEnable && needDelete(instance.getService().getMeta(), taskDO)
-                        && !instanceKeys.contains(composeInstanceKey(instance.getService().getAddress(), instance.getService().getPort()))
-                        && !ConsulUtils.healthServiceValid(instance.getChecks())
+                        && !instanceKeys.contains(getServiceInstanceAddress(instance))
                 ) {
                     ConsulClient consulClient = new ConsulClient(instance.getNode().getAddress(),8500);
                     consulClient.agentServiceDeregister(instance.getService().getId(),null);
@@ -167,17 +166,20 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
         }
     }
 
+    private String getServiceInstanceAddress(HealthService instance) {
+        return composeInstanceKey(instance.getService().getAddress(), instance.getService().getPort());
+    }
+
     private void overrideAllInstance(TaskDO taskDO, ConsulClient destConsulClient,
-        List<HealthService> healthServiceList, Set<String> instanceKeys) throws URISyntaxException {
+        List<HealthService> healthServiceList, Set<String> instanceKeys) {
 
         for (HealthService healthService : healthServiceList) {
-            if (needSync(ConsulUtils.transferMetadata(healthService.getService().getTags()))) {
+            if (needSync(ConsulUtils.transferMetadata(healthService.getService().getTags())) && ConsulUtils.healthServiceValid(healthService.getChecks())) {
                 try {
                     NewService newService = buildSyncInstance(healthService, taskDO);
 
                     destConsulClient.agentServiceRegister(newService);
-                    instanceKeys.add(composeInstanceKey(healthService.getService().getAddress(),
-                        healthService.getService().getPort()));
+                    instanceKeys.add(getServiceInstanceAddress(healthService));
                 } catch (Exception e) {
                     log.warn("Sync task from consul to consul was failed , healthService serviceName: {} address : {} , port : {} " ,
                             healthService.getService().getService(),healthService.getService().getAddress(),healthService.getService().getPort() , e);

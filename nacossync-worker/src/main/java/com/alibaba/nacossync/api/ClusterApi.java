@@ -238,11 +238,11 @@ public class ClusterApi {
         String nodeAddress = healthService.getNode().getAddress();
         ConsulClient consulClient = new ConsulClient(nodeAddress, 8500);
         String id = healthService.getService().getId();
-        Response<Void> deregister = consulClient.agentServiceDeregister(id);
-        log.info("反注册服务实例ID:{}, 结果:{}",id, GsonFactory.getGson().toJson(deregister));
+        consulClient.agentServiceDeregister(id);
+        log.info("反注册服务实例ID:{}",id);
     }
 
-    @RequestMapping(path = "/v1/cluster/registerMulti", method = RequestMethod.GET)
+    @RequestMapping(path = "/v1/cluster/registerMultipleServiceInstanceEnabled", method = RequestMethod.GET)
     public ClusterSyncResult registerMulti(@RequestParam("enable") boolean enable) {
         CheckServiceOnlyOneInstanceTaskTimer.registerMulti = enable;
         return new ClusterSyncResult();

@@ -23,7 +23,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Override
     public void configure(WebSecurity web) throws Exception {
-        web.ignoring().antMatchers("/v1/cluster/**");
+        web.ignoring().antMatchers("/v1/cluster/**","/v1/task/**");
     }
 
     @Override
