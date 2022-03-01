@@ -134,6 +134,8 @@ public class TaskBatchAddProcessor implements Processor<TaskBatchAddRequest, Tas
 
             if (null == taskDO) {
 
+                log.info("当前服务不存在，新增一个服务同步任务，服务名:{}", sourceServiceName);
+
                 taskDO = new TaskDO();
                 taskDO.setTaskId(taskId);
                 taskDO.setDestClusterId(taskBatchAddRequest.getDestClusterId());

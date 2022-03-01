@@ -119,8 +119,8 @@ public class ClusterApi {
         ClusterSyncResult clusterSyncResult = new ClusterSyncResult();
 
 
-        ConsulClientEnhance sourceConsulClientEnhance = destConsulServerHolder.get(sourceClusterId);
-        ConsulClientEnhance destConsulClientEnhance = destConsulServerHolder.get(destClusterId);
+        ConsulClientEnhance sourceConsulClientEnhance = getConsulClientEnhance(sourceClusterId);
+        ConsulClientEnhance destConsulClientEnhance = getConsulClientEnhance(destClusterId);
 
 
         compareHealthServiceInstances(sourceConsulClientEnhance, destConsulClientEnhance,clusterSyncResult);
@@ -137,10 +137,14 @@ public class ClusterApi {
     }
 
 
-    @RequestMapping(path = "/v1/cluster/deregister", method = RequestMethod.GET)
-    public ClusterSyncResult syncResult(@RequestParam("destClusterId") String destClusterId) {
-
-        ConsulClientEnhance destConsulClientEnhance = destConsulServerHolder.get(destClusterId);
+    /**
+     * 自动摘除目标consul 集群上的所有服务实例忽略服务实例健康检查状态
+     * @param destClusterId
+     * @return
+     */
+    @RequestMapping(path = "/v1/cluster/deregisterAllServiceInstances", method = RequestMethod.GET)
+    public ClusterSyncResult deregisterAllServiceInstances(@RequestParam("destClusterId") String destClusterId) {
+        ConsulClientEnhance destConsulClientEnhance = getConsulClientEnhance(destClusterId);
         ClusterSyncResult clusterSyncResult = new ClusterSyncResult();
 
         if (Objects.isNull(destConsulClientEnhance)) {
@@ -167,11 +171,7 @@ public class ClusterApi {
             List<HealthService> healthServiceList = destConsulClientEnhance.getHealthServices(key, servicesRequest).getValue();
             for (HealthService healthService : healthServiceList) {
                 try {
-                    String nodeAddress = healthService.getNode().getAddress();
-                    ConsulClient consulClient = new ConsulClient(nodeAddress, 8500);
-                    String id = healthService.getService().getId();
-                    Response<Void> deregister = consulClient.agentServiceDeregister(id);
-                    log.info("反注册服务实例ID:{}, 结果:{}",id, GsonFactory.getGson().toJson(deregister));
+                    doDeregisterService(healthService);
                 } catch (Exception e) {
                     log.warn("反注册实例失败 服务实例ID:{}" , healthService.getService().getId()  ,e );
                 }
@@ -179,6 +179,67 @@ public class ClusterApi {
         }
 
         return clusterSyncResult;
+    }
+
+
+    /**
+     * 自动摘除Consul 集群中服务状态为critical状态的服务实例
+     * @param destClusterId
+     * @return
+     */
+    @RequestMapping(path = "/v1/cluster/deregisterWithCriticalStatus", method = RequestMethod.GET)
+    public ClusterSyncResult deregisterWithCriticalStatus(@RequestParam("destClusterId") String destClusterId) {
+
+        ConsulClientEnhance destConsulClientEnhance = getConsulClientEnhance(destClusterId);
+        ClusterSyncResult clusterSyncResult = new ClusterSyncResult();
+
+        if (Objects.isNull(destConsulClientEnhance)) {
+            clusterSyncResult.setSuccess(false);
+            return clusterSyncResult;
+        }
+
+        CatalogServicesRequest catalogServicesRequest = CatalogServicesRequest.newBuilder()
+                .setQueryParams(QueryParams.DEFAULT)
+                .build();
+
+        Map<String, List<String>> catalogServices = destConsulClientEnhance.getCatalogServices(catalogServicesRequest).getValue();
+
+        for (String key : catalogServices.keySet()) {
+
+            if (key.equals("consul")) {
+                continue;
+            }
+
+            HealthServicesRequest servicesRequest = HealthServicesRequest.newBuilder()
+                    .setPassing(false)
+                    .setQueryParams(QueryParams.DEFAULT)
+                    .build();
+
+            List<HealthService> healthServiceList = destConsulClientEnhance.getHealthServices(key, servicesRequest).getValue();
+            for (HealthService healthService : healthServiceList) {
+                try {
+                    if(!ConsulUtils.healthServiceValid(healthService.getChecks()) ){
+                        doDeregisterService(healthService);
+                    }
+                } catch (Exception e) {
+                    log.warn("反注册实例失败 服务实例ID:{}" , healthService.getService().getId()  ,e );
+                }
+            }
+        }
+
+        return clusterSyncResult;
+    }
+
+    private ConsulClientEnhance getConsulClientEnhance(@RequestParam("destClusterId") String destClusterId) {
+        return destConsulServerHolder.get(destClusterId);
+    }
+
+    private void doDeregisterService(HealthService healthService) {
+        String nodeAddress = healthService.getNode().getAddress();
+        ConsulClient consulClient = new ConsulClient(nodeAddress, 8500);
+        String id = healthService.getService().getId();
+        Response<Void> deregister = consulClient.agentServiceDeregister(id);
+        log.info("反注册服务实例ID:{}, 结果:{}",id, GsonFactory.getGson().toJson(deregister));
     }
 
     @RequestMapping(path = "/v1/cluster/registerMulti", method = RequestMethod.GET)

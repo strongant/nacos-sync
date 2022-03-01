@@ -118,16 +118,16 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
     public boolean sync(TaskDO taskDO) {
         try {
 
-            ConsulClient consulClient = consulServerHolder.get(taskDO.getSourceClusterId());
+            ConsulClient sourceConsulClient = consulServerHolder.get(taskDO.getSourceClusterId());
 
             ConsulClient destConsulClient = destConsulServerHolder.get(taskDO.getDestClusterId());
 
             HealthServicesRequest request = HealthServicesRequest.newBuilder()
-                    .setPassing(false)
+                    .setPassing(true)
                     .setQueryParams(QueryParams.DEFAULT).build();
 
 
-            List<HealthService> healthServiceList = consulClient.getHealthServices(taskDO.getServiceName(), request).getValue();
+            List<HealthService> healthServiceList = sourceConsulClient.getHealthServices(taskDO.getServiceName(), request).getValue();
             List<HealthService> uniqueServiceList = ConsulUtils.getUniqueServiceList(healthServiceList);
 
             Set<String> instanceKeys = new HashSet<>();
@@ -143,8 +143,9 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
     }
 
     private void cleanAllOldInstance(TaskDO taskDO, ConsulClient destNamingService, Set<String> instanceKeys) {
+
         HealthServicesRequest request = HealthServicesRequest.newBuilder()
-                .setPassing(true)
+                .setPassing(false)
                 .setQueryParams(QueryParams.DEFAULT)
                 .build();
 
@@ -168,6 +169,7 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
 
     private void overrideAllInstance(TaskDO taskDO, ConsulClient destConsulClient,
         List<HealthService> healthServiceList, Set<String> instanceKeys) throws URISyntaxException {
+
         for (HealthService healthService : healthServiceList) {
             if (needSync(ConsulUtils.transferMetadata(healthService.getService().getTags()))) {
                 try {
