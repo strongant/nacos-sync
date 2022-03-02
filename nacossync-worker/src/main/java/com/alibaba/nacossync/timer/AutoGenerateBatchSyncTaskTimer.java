@@ -16,11 +16,9 @@
  */
 package com.alibaba.nacossync.timer;
 
-import com.alibaba.nacossync.constant.ClusterTypeEnum;
 import com.alibaba.nacossync.constant.MetricsStatisticsType;
 import com.alibaba.nacossync.dao.TaskAccessService;
 import com.alibaba.nacossync.monitor.MetricsManager;
-import com.alibaba.nacossync.pojo.QueryCondition;
 import com.alibaba.nacossync.pojo.model.TaskDO;
 import com.alibaba.nacossync.pojo.request.TaskBatchAddRequest;
 import com.alibaba.nacossync.pojo.result.TaskBatchAddResult;
@@ -65,7 +63,7 @@ public class AutoGenerateBatchSyncTaskTimer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        /** Fetch the task list from the database every 3 seconds */
+        /** Fetch the task list from the database every 10 seconds */
         scheduledExecutorService.scheduleWithFixedDelay(new AutoGenerateConsulSyncTaskThread(), 0, 10000,
                 TimeUnit.MILLISECONDS);
 
