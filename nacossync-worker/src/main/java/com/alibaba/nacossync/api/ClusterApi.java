@@ -282,7 +282,7 @@ public class ClusterApi {
             if (sourceUniqueServiceList.size() != destUniqueServiceList.size()) {
                 result = false;
                 sourceUniqueServiceList.removeAll(destUniqueServiceList);
-                log.info("服务名为{}的服务，服务实例:{}源集群与目标集群服务实例数量不一致，请检查！",key,sourceUniqueServiceList.get(0).getService().getId());
+                log.info("服务名为{}的服务，服务实例:{}源集群与目标集群服务实例数量不一致，请检查！",key,GsonFactory.getGson().toJson(sourceUniqueServiceList));
             }
         }
 
