@@ -83,7 +83,7 @@ public class QuerySyncTaskTimer implements CommandLineRunner {
                     }
 
                     if (TaskStatusEnum.SYNC.getCode().equals(taskDO.getTaskStatus())) {
-                        log.info("从数据库中查询到一个同步任务，发出一个同步事件:" + taskDO);
+                        log.info("[sync] 从数据库中查询到一个同步任务，发出一个同步事件:" + taskDO);
                         eventBus.post(new SyncTaskEvent(taskDO));
                     }
 

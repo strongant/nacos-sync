@@ -116,8 +116,6 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
     @Override
     public boolean sync(TaskDO taskDO) {
         try {
-
-            log.info("[sync]处理同步事件,syncTaskEvent:{}" , taskDO.getTaskId());
             ConsulClient sourceConsulClient = consulServerHolder.get(taskDO.getSourceClusterId());
 
             ConsulClient destConsulClient = destConsulServerHolder.get(taskDO.getDestClusterId());
@@ -180,7 +178,6 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
 
                     destConsulClient.agentServiceRegister(newService);
                     instanceKeys.add(getServiceInstanceAddress(healthService));
-                    log.info("[sync] 同步服务:{} 服务实例:{}" , taskDO.getServiceName() , healthService.getService().getId());
                 } catch (Exception e) {
                     log.warn("Sync task from consul to consul was failed , healthService serviceName: {} address : {} , port : {} " ,
                             healthService.getService().getService(),healthService.getService().getAddress(),healthService.getService().getPort() , e);
