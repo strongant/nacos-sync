@@ -20,6 +20,7 @@ import javax.annotation.PostConstruct;
 
 import com.alibaba.nacossync.constant.MetricsStatisticsType;
 import com.alibaba.nacossync.monitor.MetricsManager;
+import com.ecwid.consul.json.GsonFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +62,7 @@ public class EventListener {
     public void listenerSyncTaskEvent(SyncTaskEvent syncTaskEvent) {
 
         try {
+            log.info("[sync] 收到一个同步事件,syncTaskEvent:{}" , GsonFactory.getGson().toJson(syncTaskEvent));
             long start = System.currentTimeMillis();
             if (syncManagerService.sync(syncTaskEvent.getTaskDO())) {                
                 skyWalkerCacheServices.addFinishedTask(syncTaskEvent.getTaskDO());

@@ -24,6 +24,7 @@ import com.alibaba.nacossync.extension.support.ConsulClientEnhance;
 import com.alibaba.nacossync.monitor.MetricsManager;
 import com.alibaba.nacossync.pojo.model.TaskDO;
 import com.alibaba.nacossync.util.ConsulUtils;
+import com.ecwid.consul.json.GsonFactory;
 import com.ecwid.consul.v1.ConsulClient;
 import com.ecwid.consul.v1.QueryParams;
 import com.ecwid.consul.v1.Response;
@@ -118,6 +119,7 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
     public boolean sync(TaskDO taskDO) {
         try {
 
+            log.info("[sync]处理同步事件,syncTaskEvent:{}" , taskDO.getTaskId());
             ConsulClient sourceConsulClient = consulServerHolder.get(taskDO.getSourceClusterId());
 
             ConsulClient destConsulClient = destConsulServerHolder.get(taskDO.getDestClusterId());
@@ -180,6 +182,7 @@ public class ConsulSyncToConsulServiceImpl implements SyncService {
 
                     destConsulClient.agentServiceRegister(newService);
                     instanceKeys.add(getServiceInstanceAddress(healthService));
+                    log.info("[sync] 同步服务:{} 服务实例:{}" , taskDO.getServiceName() , healthService.getService().getId());
                 } catch (Exception e) {
                     log.warn("Sync task from consul to consul was failed , healthService serviceName: {} address : {} , port : {} " ,
                             healthService.getService().getService(),healthService.getService().getAddress(),healthService.getService().getPort() , e);
